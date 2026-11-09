@@ -51,6 +51,6 @@ $('go').onclick=async()=>{
     $('sub').textContent='Проверка движения: '+Math.min(100,Math.round(path/1.5*100))+'%';
     if(path>1.5){ready=true;ws.send(JSON.stringify({t:'ready',v:true}));msg('Готово ✔','Ждите старта на большом экране')}}}
   const p=[];for(let i=0;i<33;i++)p.push(+w[i].x.toFixed(3),+w[i].y.toFixed(3),+w[i].z.toFixed(3),+(n[i].visibility).toFixed(2));
-  ws.send(JSON.stringify({t:'pose',p,h:[+((n[23].x+n[24].x)/2).toFixed(3),+Math.abs(n[11].x-n[12].x).toFixed(3)]}))};
+  ws.send(JSON.stringify({t:'pose',p,h:[+((n[23].x+n[24].x)/2).toFixed(3),+(Math.hypot(((n[11].x+n[12].x)-(n[23].x+n[24].x))/2*v.videoWidth,((n[11].y+n[12].y)-(n[23].y+n[24].y))/2*v.videoHeight)/v.videoHeight).toFixed(4)]}))};
  loop()};
 </script></html>

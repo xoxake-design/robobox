@@ -65,7 +65,7 @@ for(const [h,c] of [[.45,0xff5a1f],[.85,0xeeeeee],[1.25,0x36e2ff]])for(const [x,
 const LEN={ua:.3,fa:.3,th:.45,sh:.45},HW=.22,HH=.14,GUARD=(()=>{const g={};
  g[11]=V(0,.5,-.2);g[12]=V(0,.5,.2);g[23]=V(0,0,-.1);g[24]=V(0,0,.1);g[13]=V(.05,.25,-.27);g[14]=V(.05,.25,.27);g[15]=V(.27,.45,-.22);g[16]=V(.2,.5,.2);
  g[25]=V(.12,-.43,-.12);g[27]=V(.15,-.86,-.12);g[26]=V(-.05,-.43,.12);g[28]=V(-.12,-.85,.14);return g})();
-const robots=[0,1].map(i=>({i,root:new THREE.Group(),P:Array.from({length:33},()=>V()),T:Array.from({length:33},()=>V()),live:0,ready:false,on:false,sw:0,sw0:0,lat:0,fwd:0,knock:0,flash:0}));
+const robots=[0,1].map(i=>({i,root:new THREE.Group(),P:Array.from({length:33},()=>V()),T:Array.from({length:33},()=>V()),live:0,ready:false,on:false,sw:0,swf:0,sw0:0,lat:0,fwd:0,fS:0,lS:0,ph:0,knock:0,flash:0}));
 robots.forEach((r,i)=>{r.root.position.x=i?1.2:-1.2;r.root.rotation.y=i?Math.PI:0;S.add(r.root);build(r)});
 function limb(len,rad,m,jm){const g=new THREE.Group();add(new THREE.CylinderGeometry(rad,rad*.85,len,14),m,0,-len/2,0,g);add(new THREE.SphereGeometry(rad*1.25,14,10),jm,0,0,0,g);return g}
 function build(r){
@@ -88,7 +88,9 @@ function pose(r,dt){
  const idle=performance.now()-r.live>1500,t=performance.now()/1000;
  if(idle){for(const k in GUARD)r.T[k].copy(GUARD[k]);const ph=(t*.55+r.i*1.2)%2.2,j=ph<.3?Math.sin(ph/.3*Math.PI):0;
   r.T[15].x+=j*.5*(r.i?0:1);r.T[16].x+=j*.5*(r.i?1:0);for(const k in GUARD)r.T[k].y+=Math.sin(t*2+r.i)*.012;r.T[11].z+=0;r.lat=r.fwd=0}
- const a=1-Math.pow(.0005,dt);for(const k in GUARD)r.P[k].lerp(r.T[k],a);const P=r.P;
+ const a=1-Math.pow(.0005,dt),pf=r.fS;r.fS+=(r.fwd-r.fS)*Math.min(1,dt*7);r.lS+=(r.lat-r.lS)*Math.min(1,dt*7);
+ const walk=Math.min(1,Math.abs(r.fS-pf)/dt/.6);r.ph+=dt*9*walk;const sn=Math.sin(r.ph),W={25:[sn*.18,Math.max(0,sn)*.05],27:[sn*.35,Math.max(0,sn)*.14],26:[-sn*.18,Math.max(0,-sn)*.05],28:[-sn*.35,Math.max(0,-sn)*.14]};
+ for(const k in GUARD){tmp.copy(r.T[k]);const w=W[k];if(w){tmp.x+=w[0]*walk;tmp.y+=w[1]*walk}r.P[k].lerp(tmp,a)}const P=r.P;
  // ноги и высота
  const leg=(h,k,kn,an)=>{const d1=P[kn].clone().sub(P[k]).normalize(),d2=P[an].clone().sub(P[kn]).normalize();return {d1,d2,foot:d1.clone().multiplyScalar(LEN.th).addScaledVector(d2,LEN.sh)}};
  const lL=leg(0,23,25,27),lR=leg(0,24,26,28),hy=-Math.min(lL.foot.y,lR.foot.y)+.07;
@@ -96,7 +98,7 @@ function pose(r,dt){
  const up=P[11].clone().add(P[12]).multiplyScalar(.5).sub(P[23].clone().add(P[24]).multiplyScalar(.5)).normalize(),rt=P[12].clone().sub(P[11]).normalize(),fw=up.clone().cross(rt).normalize();
  rt.copy(fw).cross(up).normalize();r.T3.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(fw,up,rt));
  r.head.rotation.set(0,0,0);
- r.rig.position.set(Math.min(Math.max(r.fwd+r.knock,-1.6),.75),0,Math.max(-1.2,Math.min(1.2,r.lat)));
+ r.rig.position.set(Math.min(Math.max(r.fS+r.knock,-1.6),.75),0,Math.max(-1.2,Math.min(1.2,r.lS)));
  for(const [s,sg,hz] of [['L',-1,23],['R',1,24]]){
   const sh=V(0,.55,.22*sg).applyQuaternion(r.T3.quaternion).add(hip),ei=s=='L'?13:14,wi=s=='L'?15:16,si=s=='L'?11:12,L=r.l;
   const d1=P[ei].clone().sub(P[si]).normalize(),d2=P[wi].clone().sub(P[ei]).normalize();
@@ -116,10 +118,10 @@ function connect(){if(ws&&ws.readyState<2)return;ws=new WebSocket((location.prot
  ws.onmessage=e=>{const m=JSON.parse(e.data);
   if(m.t=='room'){room=m.code;const u=location.origin+'/phone.html?room='+room,q=qrcode(0,'M');q.addData(u);q.make();$('qr').innerHTML=q.createSvgTag({scalable:true,margin:0});$('url').textContent=u}
   if(m.t=='player'){const r=robots[m.slot];r.on=m.on;if(!m.on){r.ready=false;r.live=0}lobbyUI();if(m.on)phoneSend(m.slot,{t:'msg',text:'Вы игрок '+(m.slot+1)})}
-  if(m.t=='ready'){const r=robots[m.slot];r.ready=true;r.sw0=r.sw;lobbyUI()}
-  if(m.t=='pose'){const r=robots[m.slot];r.live=performance.now();const p=m.p;r.sw=m.h[1];
+  if(m.t=='ready'){const r=robots[m.slot];r.ready=true;r.sw0=r.swf||r.sw;lobbyUI()}
+  if(m.t=='pose'){const r=robots[m.slot];r.live=performance.now();const p=m.p;r.sw=m.h[1];r.swf=r.swf?r.swf+(r.sw-r.swf)*.3:r.sw;
    for(let i=0;i<33;i++)if(p[i*4+3]>.3)r.T[i].set(-p[i*4+2],-p[i*4+1],-p[i*4]);
-   if(r.sw0){r.fwd=THREE.MathUtils.clamp((r.sw-r.sw0)*8,-1.6,.75)}r.lat=(.5-m.h[0])*3}};
+   if(r.sw0&&r.swf>.01){let d=2.5*(1-r.sw0/r.swf);d=Math.abs(d)<.05?0:d-Math.sign(d)*.05;r.fwd=THREE.MathUtils.clamp(d*1.4,-1.6,.75)}r.lat=(.5-m.h[0])*3}};
  ws.onclose=()=>{if(mode=='lobby')setTimeout(connect,1000)}}
 function lobbyUI(){robots.forEach((r,i)=>{const e=$('pl'+i);e.className='pl'+(r.on?' on':'')+(r.ready?' rd':'');e.textContent=`Игрок ${i+1}: `+(r.ready?'готов ✔':r.on?'подключён, ждём проверку…':'ждём…')});$('fight').disabled=!(robots[0].ready&&robots[1].ready)}
 // ---------- UI
@@ -138,7 +140,7 @@ const st=()=>({hp:100,pts:0,thrown:0,landed:0,max:0,dmg:0,combo:0,ct:0});
 const big=(t,d)=>{const b=$('big');b.textContent=t;b.classList.add('on');if(d)setTimeout(()=>b.classList.remove('on'),d)};
 async function startFight(){
  mode='count';show('hud');F={s:[st(),st()],t:SET.time,over:false};hud();phoneSend('all',{t:'fight',on:false});
- robots.forEach(r=>{r.knock=0;r.gL.hitSt=r.gR.hitSt=0});
+ robots.forEach(r=>{r.knock=0;r.sw0=r.swf||r.sw0});
  for(const n of [3,2,1]){big(n);snd(440,.2,'square',.2);phoneSend('all',{t:'msg',text:String(n)});await new Promise(r=>setTimeout(r,1000));if(mode!='count')return}
  big('БОКС!',900);snd(880,1.2,'sine',.5);phoneSend('all',{t:'msg',text:'БОКС!'});phoneSend('all',{t:'fight',on:true});phoneSend('all',{t:'hp',v:100});mode='fight'}
 function hud(){const f=F.s;[0,1].forEach(i=>{$('h'+i).style.width=Math.max(0,f[i].hp)+'%';$('s'+i).textContent=`Игрок ${i+1} · ${f[i].pts} очков · ${f[i].landed}/${f[i].thrown} ударов`});$('tm').textContent=Math.ceil(F.t)}
