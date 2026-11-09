@@ -38,7 +38,7 @@ import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import qrcode from 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/+esm';
 const $=i=>document.getElementById(i),V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z);
 const SK=[{n:'Железный',c:0xb9c2d0,a:0xff5a1f},{n:'Кобальт',c:0x4a6fa5,a:0x36e2ff},{n:'Золотой',c:0xd4a017,a:0xffe14a},{n:'Пустота',c:0x2a2a35,a:0xb84bff}];
-const SET=Object.assign({time:60,dmg:1,vol:.6,sk:[0,1]},JSON.parse(localStorage.rb||'{}'));
+const SET=Object.assign({time:60,rounds:3,dmg:1,vol:.6,sk:[0,1]},JSON.parse(localStorage.rb||'{}'));
 const save=()=>localStorage.rb=JSON.stringify(SET);
 // ---------- звук
 let AC;const snd=(f,d,ty='sine',v=.3,f2=f)=>{if(!SET.vol)return;AC=AC||new AudioContext();const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;
@@ -47,7 +47,7 @@ let AC;const snd=(f,d,ty='sine',v=.3,f2=f)=>{if(!SET.vol)return;AC=AC||new Audio
 const cv=$('cv'),R=new THREE.WebGLRenderer({canvas:cv,antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,2));R.shadowMap.enabled=true;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.1;
 const S=new THREE.Scene();S.background=new THREE.Color(0x05060a);S.fog=new THREE.FogExp2(0x05060a,.045);
 S.environment=new THREE.PMREMGenerator(R).fromScene(new RoomEnvironment(),.04).texture;S.environmentIntensity=.35;
-const cam=new THREE.PerspectiveCamera(45,1,.1,100),camBase=V(0,1.9,6.3);
+const cam=new THREE.PerspectiveCamera(50,1,.1,100),camBase=V(0,4.6,8.6),CK=.435;
 const spot=(x,c,i)=>{const l=new THREE.SpotLight(c,i,0,.7,.6,1.5);l.position.set(x,7,1);l.castShadow=true;l.shadow.mapSize.set(2048,2048);l.target.position.set(x*.4,0,0);S.add(l,l.target)};
 spot(-1.5,0xffe6cc,260);spot(1.5,0xcce6ff,260);
 for(const [x,z,c] of [[-3.4,-3.4,0xff5a1f],[3.4,-3.4,0x36e2ff],[-3.4,3.4,0xff5a1f],[3.4,3.4,0x36e2ff]]){const l=new THREE.PointLight(c,12,9,1.5);l.position.set(x,2.4,z);S.add(l)}
@@ -65,23 +65,48 @@ for(const [h,c] of [[.45,0xff5a1f],[.85,0xeeeeee],[1.25,0x36e2ff]])for(const [x,
 const LEN={ua:.3,fa:.3,th:.45,sh:.45},HW=.22,HH=.14,GUARD=(()=>{const g={};
  g[11]=V(0,.5,-.2);g[12]=V(0,.5,.2);g[23]=V(0,0,-.1);g[24]=V(0,0,.1);g[13]=V(.05,.25,-.27);g[14]=V(.05,.25,.27);g[15]=V(.27,.45,-.22);g[16]=V(.2,.5,.2);
  g[25]=V(.12,-.43,-.12);g[27]=V(.15,-.86,-.12);g[26]=V(-.05,-.43,.12);g[28]=V(-.12,-.85,.14);return g})();
-const robots=[0,1].map(i=>({i,root:new THREE.Group(),P:Array.from({length:33},()=>V()),T:Array.from({length:33},()=>V()),live:0,ready:false,on:false,sw:0,swf:0,sw0:0,lat:0,fwd:0,fS:0,lS:0,ph:0,knock:0,flash:0}));
+const robots=[0,1].map(i=>({i,root:new THREE.Group(),P:Array.from({length:33},()=>V()),T:Array.from({length:33},()=>V()),live:0,ready:false,on:false,sw:0,swf:0,sw0:0,lat:0,fwd:0,fS:0,lS:0,ph:0,pt:0,pad:0,knock:0,flash:0}));
 robots.forEach((r,i)=>{r.root.position.x=i?1.2:-1.2;r.root.rotation.y=i?Math.PI:0;S.add(r.root);build(r)});
-function limb(len,rad,m,jm){const g=new THREE.Group();add(new THREE.CylinderGeometry(rad,rad*.85,len,14),m,0,-len/2,0,g);add(new THREE.SphereGeometry(rad*1.25,14,10),jm,0,0,0,g);return g}
+var NZ;function noise(){if(NZ)return NZ;const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');x.fillStyle='#808080';x.fillRect(0,0,256,256);
+ for(let i=0;i<700;i++){const g=Math.random()*255|0;x.strokeStyle=`rgba(${g},${g},${g},.35)`;x.lineWidth=Math.random()*1.5;x.beginPath();const a=Math.random()*256,b=Math.random()*256;x.moveTo(a,b);x.lineTo(a+(Math.random()-.5)*60,b+(Math.random()-.5)*60);x.stroke()}
+ NZ=new THREE.CanvasTexture(c);NZ.wrapS=NZ.wrapT=THREE.RepeatWrapping;return NZ}
+function bx(w,h,d,m,x,y,z,p,rx=0,ry=0,rz=0){const o=add(new THREE.BoxGeometry(w,h,d),m,x,y,z,p);o.rotation.set(rx,ry,rz);return o}
+function cy(a,b,h,m,x,y,z,p,rx=0,rz=0){const o=add(new THREE.CylinderGeometry(a,b,h,14),m,x,y,z,p);o.rotation.set(rx,0,rz);return o}
+function bolts(m,p,pts,ax='z'){for(const [x,y,z] of pts){const o=add(new THREE.CylinderGeometry(.014,.014,.014,6),m,x,y,z,p);o.rotation[ax]=Math.PI/2}}
+function ring(r,t,m,y,p){const o=add(new THREE.TorusGeometry(r,t,8,18),m,0,y,0,p);o.rotation.x=Math.PI/2;return o}
+function sph(r,m,x,y,z,p,sx=1,sy=1,sz=1){const o=add(new THREE.SphereGeometry(r,16,12),m,x,y,z,p);o.scale.set(sx,sy,sz);return o}
+function limb(len,r,m,dk,ch,fl=1){const g=new THREE.Group();
+ add(new THREE.CylinderGeometry(r,r*fl,len,16),dk,0,-len/2,0,g);cy(r*1.3,r*1.3*(1+(fl-1)*.6),len*.5,m,0,-len*.38,0,g);
+ ring(r*1.35,.012,ch,-len*.14,g);ring(r*1.4*fl,.014,ch,-len*.62,g);ring(r*1.2,.02,dk,-.01,g);
+ for(const s of[-1,1]){cy(.011,.011,len*.75,ch,0,-len*.5,s*r*1.55,g);cy(.02,.02,len*.32,dk,0,-len*.26,s*r*1.55,g)}
+ sph(r*1.3,dk,0,0,0,g);bolts(ch,g,[[r*1.3,0,0],[-r*1.3,0,0]]);return g}
 function build(r){
  if(r.rig)r.root.remove(r.rig);const k=SK[SET.sk[r.i]],rig=r.rig=new THREE.Group();r.root.add(rig);
- const body=r.body=M(k.c,.92,.26,{emissive:0xff1100,emissiveIntensity:0}),dk=M(0x14161c,.7,.4),gl=M(k.a,.2,.3,{emissive:k.a,emissiveIntensity:1.6}),gv=M(k.a,.45,.35,{emissive:k.a,emissiveIntensity:.18});
+ const body=r.body=M(k.c,.92,.26,{emissive:0xff2200,emissiveIntensity:0,bumpMap:noise(),bumpScale:.6}),dk=M(0x14161c,.75,.38,{bumpMap:noise(),bumpScale:.5}),ch=M(0xdfe6ee,1,.15),
+  gl=M(k.a,.2,.3,{emissive:k.a,emissiveIntensity:1.8}),gv=M(k.a,.5,.35,{emissive:k.a,emissiveIntensity:.15,bumpMap:noise(),bumpScale:.8}),rb=M(0x0b0b0e,.1,.8);
  const T=r.T3=new THREE.Group();rig.add(T);
- add(new THREE.BoxGeometry(.3,.22,.34),dk,0,0,0,T);add(new THREE.BoxGeometry(.28,.5,.5),body,0,.38,0,T);add(new THREE.BoxGeometry(.3,.1,.42),dk,0,.2,0,T);
- add(new THREE.SphereGeometry(.07,16,12),gl,.15,.4,0,T);add(new THREE.CylinderGeometry(.06,.07,.1,10),dk,0,.66,0,T);
- const hd=add(new THREE.BoxGeometry(.24,.26,.22),body,0,.82,0,T);add(new THREE.BoxGeometry(.04,.07,.17),gl,.115,.84,0,T);add(new THREE.BoxGeometry(.06,.05,.05),dk,0,.99,0,T);
- r.head=hd;
- r.l={};for(const s of ['L','R']){
-  r.l['ua'+s]=limb(LEN.ua,.05,body,dk);r.l['fa'+s]=limb(LEN.fa,.045,dk,body);r.l['th'+s]=limb(LEN.th,.07,body,dk);r.l['sh'+s]=limb(LEN.sh,.055,dk,body);
-  const fist=add(new THREE.SphereGeometry(.115,18,14),gv,0,-LEN.fa-.08,0,r.l['fa'+s]);fist.scale.set(1,1.05,1.1);r['g'+s]=fist;add(new THREE.CylinderGeometry(.065,.065,.08,12),dk,0,-LEN.fa+.01,0,r.l['fa'+s]);
-  add(new THREE.BoxGeometry(.3,.07,.13),dk,.07,-LEN.sh-.03,0,r.l['sh'+s]);
-  for(const k2 of ['ua','fa','th','sh'])rig.add(r.l[k2+s]);r['gs'+s]={v:V(),prev:null,sw:0,hit:true}}
- r.body.emissive.set(0xff2200)}
+ bx(.28,.2,.36,dk,0,0,0,T);for(const s of[-1,1]){bx(.2,.2,.07,body,0,-.02,s*.2,T);bolts(ch,T,[[.09,-.02,s*.236],[-.09,-.02,s*.236]],'x')}
+ bx(.32,.06,.42,ch,0,.12,0,T);bx(.05,.1,.12,gl,.17,.12,0,T);
+ for(let i=0;i<3;i++){cy(.13,.12,.055,dk,0,.17+i*.065,0,T);ring(.135,.01,ch,.17+i*.065,T)}
+ bx(.3,.4,.54,body,0,.45,0,T);bx(.07,.3,.5,body,.17,.5,0,T,0,0,-.22);bx(.06,.28,.13,dk,.2,.47,0,T);sph(.05,gl,.225,.42,0,T);
+ for(let i=0;i<4;i++)for(const s of[-1,1])bx(.02,.025,.17,dk,.17,.27+i*.04,s*.15,T);
+ for(const s of[-1,1]){bx(.02,.3,.04,gl,.21,.5,s*.13,T);bolts(ch,T,[[.21,.62,s*.2],[.21,.34,s*.2],[.21,.62,s*.1]],'z')}
+ bx(.2,.08,.42,body,0,.68,0,T);bx(.05,.3,.34,dk,-.17,.45,0,T);for(const s of[-1,1])cy(.025,.025,.42,ch,-.2,.44,s*.1,T);
+ for(const s of[-1,1]){sph(.14,body,0,.6,s*.29,T,1,.8,1.1);bx(.22,.04,.22,body,0,.69,s*.29,T);bolts(ch,T,[[.08,.71,s*.29],[-.08,.71,s*.29],[0,.71,s*.37]],'y')}
+ cy(.06,.07,.1,dk,0,.74,0,T);for(const s of[-1,1])cy(.012,.012,.16,ch,.04,.74,s*.07,T);
+ const hd=r.head=new THREE.Group();hd.position.set(0,.9,0);T.add(hd);
+ bx(.24,.27,.22,body,0,0,0,hd);bx(.04,.2,.18,dk,.125,-.01,0,hd);
+ for(const s of[-1,1]){bx(.03,.035,.065,gl,.145,.03,s*.055,hd);cy(.04,.04,.05,dk,0,0,s*.13,hd,Math.PI/2,0);bolts(ch,hd,[[.1,.1,s*.115]],'z')}
+ for(let i=0;i<5;i++)bx(.02,.06,.2,dk,-.08+i*.04,.16,0,hd);
+ for(let i=0;i<3;i++)bx(.02,.012,.12,ch,.14,-.06-i*.02,0,hd);bx(.12,.06,.2,dk,.05,-.15,0,hd);
+ r.l={};for(const s of['L','R']){const l=r.l;
+  l['ua'+s]=limb(LEN.ua,.05,body,dk,ch);l['fa'+s]=limb(LEN.fa,.05,body,dk,ch,1.55);l['th'+s]=limb(LEN.th,.07,body,dk,ch,1.2);l['sh'+s]=limb(LEN.sh,.055,body,dk,ch,1.25);
+  const fa=l['fa'+s];r['g'+s]=sph(.115,gv,0,-LEN.fa-.08,0,fa,1,1.05,1.12);
+  cy(.075,.075,.08,dk,0,-LEN.fa+.01,0,fa);ring(.08,.012,gl,-LEN.fa-.03,fa);ring(.1,.02,rb,-LEN.fa-.07,fa);sph(.04,gv,.07,-LEN.fa-.12,s=='L'?.08:-.08,fa);
+  const sh=l['sh'+s];bx(.3,.07,.13,dk,.07,-LEN.sh-.03,0,sh);bx(.1,.06,.13,body,.17,-LEN.sh-.02,0,sh);bx(.06,.1,.12,body,.075,-.03,0,sh);cy(.08,.08,.03,ch,0,-LEN.sh,0,sh);
+  const th=l['th'+s];cy(.1,.09,.3,body,0,-.2,0,th);bolts(ch,th,[[.1,-.1,0],[.1,-.3,0]],'z');
+  for(const q of['ua','fa','th','sh'])rig.add(l[q+s]);r['gs'+s]={v:V(),prev:null,sw:0,hit:true}}}
+
 const Z=V(0,-1,0),q=new THREE.Quaternion(),tmp=V();
 const aim=(g,d)=>g.quaternion.setFromUnitVectors(Z,d.normalize());
 function pose(r,dt){
@@ -119,9 +144,9 @@ function connect(){if(ws&&ws.readyState<2)return;ws=new WebSocket((location.prot
   if(m.t=='room'){room=m.code;const u=location.origin+'/phone.html?room='+room,q=qrcode(0,'M');q.addData(u);q.make();$('qr').innerHTML=q.createSvgTag({scalable:true,margin:0});$('url').textContent=u}
   if(m.t=='player'){const r=robots[m.slot];r.on=m.on;if(!m.on){r.ready=false;r.live=0}lobbyUI();if(m.on)phoneSend(m.slot,{t:'msg',text:'Вы игрок '+(m.slot+1)})}
   if(m.t=='ready'){const r=robots[m.slot];r.ready=true;r.sw0=r.swf||r.sw;lobbyUI()}
-  if(m.t=='pose'){const r=robots[m.slot];r.live=performance.now();const p=m.p;r.sw=m.h[1];r.swf=r.swf?r.swf+(r.sw-r.swf)*.3:r.sw;
+  if(m.t=='pose'){const r=robots[m.slot];r.live=r.pt=performance.now();const p=m.p;r.sw=m.h[1];r.swf=r.swf?r.swf+(r.sw-r.swf)*.3:r.sw;
    for(let i=0;i<33;i++)if(p[i*4+3]>.3)r.T[i].set(-p[i*4+2],-p[i*4+1],-p[i*4]);
-   if(r.sw0&&r.swf>.01){let d=2.5*(1-r.sw0/r.swf);d=Math.abs(d)<.05?0:d-Math.sign(d)*.05;r.fwd=THREE.MathUtils.clamp(d*1.4,-1.6,.75)}r.lat=(.5-m.h[0])*3}};
+   if(r.swf>.005){const d=Math.min(6.5,Math.max(1,CK/r.swf));r.fwd=-1.6+(6.5-d)/5.5*2.35}r.lat=(.5-m.h[0])*3}};
  ws.onclose=()=>{if(mode=='lobby')setTimeout(connect,1000)}}
 function lobbyUI(){robots.forEach((r,i)=>{const e=$('pl'+i);e.className='pl'+(r.on?' on':'')+(r.ready?' rd':'');e.textContent=`Игрок ${i+1}: `+(r.ready?'готов ✔':r.on?'подключён, ждём проверку…':'ждём…')});$('fight').disabled=!(robots[0].ready&&robots[1].ready)}
 // ---------- UI
@@ -132,18 +157,21 @@ $('bs').onclick=()=>go('lobby');$('bt').onclick=()=>go('set');$('bc').onclick=()
 function rows(id,list){const el=$(id);el.innerHTML='';for(const o of list){const d=document.createElement('div');d.className='row';d.innerHTML=`<span>${o.l}</span><span><button>◀</button> <i></i> <button>▶</button></span>`;
  const i=d.querySelector('i'),[b1,b2]=d.querySelectorAll('button'),u=()=>i.textContent=o.show();b1.onclick=()=>{o.step(-1);u();save()};b2.onclick=()=>{o.step(1);u();save()};u();el.append(d)}}
 const cyc=(k,vals,l,fmt=v=>v)=>({l,show:()=>fmt(SET[k]),step:d=>{SET[k]=vals[(vals.indexOf(SET[k])+d+vals.length)%vals.length];snd(500,.08)}});
-rows('setrows',[cyc('time',[60,90,120],'Время боя, сек'),cyc('dmg',[.7,1,1.5],'Сила ударов',v=>'×'+v),cyc('vol',[0,.3,.6,1],'Громкость',v=>Math.round(v*100)+'%')]);
+rows('setrows',[cyc('rounds',[1,3,5],'Раундов'),cyc('time',[60,90,120],'Время раунда, сек'),cyc('dmg',[.7,1,1.5],'Сила ударов',v=>'×'+v),cyc('vol',[0,.3,.6,1],'Громкость',v=>Math.round(v*100)+'%')]);
 rows('charrows',[0,1].map(i=>({l:'Игрок '+(i+1),show:()=>SK[SET.sk[i]].n,step:d=>{SET.sk[i]=(SET.sk[i]+d+SK.length)%SK.length;build(robots[i])}})));
 $('fight').onclick=()=>startFight();addEventListener('keydown',e=>{if(e.key=='Escape')go('menu');if((e.key=='Enter'||e.key==' ')&&mode=='lobby'&&!$('fight').disabled)startFight();if(e.key=='Enter'&&mode=='result')startFight()});
 // ---------- бой
 const st=()=>({hp:100,pts:0,thrown:0,landed:0,max:0,dmg:0,combo:0,ct:0});
 const big=(t,d)=>{const b=$('big');b.textContent=t;b.classList.add('on');if(d)setTimeout(()=>b.classList.remove('on'),d)};
-async function startFight(){
- mode='count';show('hud');F={s:[st(),st()],t:SET.time,over:false};hud();phoneSend('all',{t:'fight',on:false});
- robots.forEach(r=>{r.knock=0;r.sw0=r.swf||r.sw0});
- for(const n of [3,2,1]){big(n);snd(440,.2,'square',.2);phoneSend('all',{t:'msg',text:String(n)});await new Promise(r=>setTimeout(r,1000));if(mode!='count')return}
- big('БОКС!',900);snd(880,1.2,'sine',.5);phoneSend('all',{t:'msg',text:'БОКС!'});phoneSend('all',{t:'fight',on:true});phoneSend('all',{t:'hp',v:100});mode='fight'}
-function hud(){const f=F.s;[0,1].forEach(i=>{$('h'+i).style.width=Math.max(0,f[i].hp)+'%';$('s'+i).textContent=`Игрок ${i+1} · ${f[i].pts} очков · ${f[i].landed}/${f[i].thrown} ударов`});$('tm').textContent=Math.ceil(F.t)}
+async function startFight(){F={s:[st(),st()],t:SET.time,round:1,tot:SET.rounds,wins:[0,0],rp:[0,0]};await runRound()}
+async function runRound(){const tk=F,wt=ms=>new Promise(r=>setTimeout(r,ms));
+ mode='count';show('hud');F.s.forEach(x=>{x.hp=100;x.combo=0});F.t=SET.time;F.rp=[0,0];hud();$('cmb').textContent='';
+ phoneSend('all',{t:'fight',on:false});phoneSend('all',{t:'hp',v:100});robots.forEach(r=>{r.knock=0;r.sw0=r.swf||r.sw0});
+ big('РАУНД '+F.round,1100);phoneSend('all',{t:'msg',text:'Раунд '+F.round});await wt(1300);if(mode!='count'||F!==tk)return;
+ for(const n of [3,2,1]){big(n);snd(440,.2,'square',.2);phoneSend('all',{t:'msg',text:String(n)});await wt(1000);if(mode!='count'||F!==tk)return}
+ big('БОКС!',900);snd(880,1.2,'sine',.5);phoneSend('all',{t:'msg',text:'БОКС!'});phoneSend('all',{t:'fight',on:true});mode='fight'}
+
+function hud(){const f=F.s;[0,1].forEach(i=>{$('h'+i).style.width=Math.max(0,f[i].hp)+'%';$('s'+i).textContent=`Игрок ${i+1} · ${f[i].pts} очков · ${f[i].landed}/${f[i].thrown} ударов`});$('tm').innerHTML=Math.ceil(F.t)+`<small style="display:block;font:700 18px Bahnschrift,sans-serif;opacity:.8">Раунд ${F.round}/${F.tot} · ${F.wins[0]}:${F.wins[1]}</small>`}
 const wp=(o)=>o.getWorldPosition(V());
 function combat(dt){
  const f=F.s;F.t-=dt;
@@ -153,26 +181,30 @@ function combat(dt){
    if(v>2.6&&!gs.on){gs.on=true;gs.hit=false;f[a].thrown++}if(v<1.3)gs.on=false;
    if(gs.on&&!gs.hit){const hd=p.distanceTo(dh)<.3,ch=p.distanceTo(dc)<.36;
     if(hd||ch){gs.hit=true;const raw=THREE.MathUtils.clamp(v*2.4,5,24)*SET.dmg*(hd?1.5:1),blk=guard&&ch||guard&&hd,d=Math.round(blk?raw*.25:raw);
-     f[1-a].hp-=d;f[a].landed++;f[a].dmg+=d;f[a].ct=2;f[a].combo++;const pts=d*10+(f[a].combo>1?f[a].combo*15:0);f[a].pts+=pts;
+     f[1-a].hp-=d;f[a].landed++;f[a].dmg+=d;f[a].ct=2;f[a].combo++;const pts=d*10+(f[a].combo>1?f[a].combo*15:0);f[a].pts+=pts;F.rp[a]+=pts;
      D.flash=blk?.3:1;D.knock-=blk?.05:.04*d;shake=blk?.04:.1;spark(p,blk?10:40);ftext(p,blk?'БЛОК':'-'+d+(f[a].combo>2?' ×'+f[a].combo:''),blk?'#36e2ff':hd?'#ffe14a':'#ff5a1f');
      snd(blk?600:140,blk?.08:.18,blk?'triangle':'square',.5,blk?300:40);phoneSend(1-a,{t:'hit',block:blk});phoneSend(1-a,{t:'hp',v:Math.max(0,f[1-a].hp)});
      $('cmb').textContent=f[a].combo>1?`КОМБО ×${f[a].combo}  Игрок ${a+1}`:''}}}
   f[a].ct-=dt;if(f[a].ct<=0)f[a].combo=0}
- hud();if(F.s.some(x=>x.hp<=0)||F.t<=0)finish()}
-function finish(){mode='over';const f=F.s;phoneSend('all',{t:'fight',on:false});snd(880,1.5,'sine',.5);
- const ko=f.findIndex(x=>x.hp<=0),w=ko>=0?1-ko:f[0].pts==f[1].pts?(f[0].hp>=f[1].hp?0:1):f[0].pts>f[1].pts?0:1;
- big(ko>=0?'НОКАУТ!':'ВРЕМЯ!',2000);ws&&ws.readyState==1&&ws.send(JSON.stringify({t:'result',winner:w,ko:ko>=0,duration:SET.time-Math.max(0,Math.ceil(F.t)),p1:{...f[0]},p2:{...f[1]}}));
- setTimeout(()=>{$('big').classList.remove('on');const row=(l,g)=>`<tr><td>${l}</td><td>${g(f[0])}</td><td>${g(f[1])}</td></tr>`;
-  $('result').innerHTML=`<h2>Победил игрок ${w+1}</h2><table><tr><td></td><td>Игрок 1</td><td>Игрок 2</td></tr>${row('Здоровье',x=>Math.max(0,Math.round(x.hp))+'%')}${row('Очки',x=>x.pts)}${row('Ударов',x=>x.thrown)}${row('Попаданий',x=>x.landed)}${row('Точность',x=>x.thrown?Math.round(x.landed/x.thrown*100)+'%':'—')}${row('Урон',x=>x.dmg)}${row('Макс. скорость',x=>x.max.toFixed(1)+' м/с')}</table><button class=b id=rm>Реванш</button><button class=b id=mn>В меню</button>`;
-  show('result');mode='result';setTimeout(()=>fetch('/api/top').then(r=>r.json()).then(a=>{if(a.length)$('result').insertAdjacentHTML('beforeend','<div style="font-size:16px;opacity:.7;margin-top:10px">Последние бои: '+a.map(x=>`${new Date(x.created_at).toLocaleDateString()} игрок ${x.winner+1} (${x.p1.pts}:${x.p2.pts})`).join(' · ')+'</div>')}).catch(()=>{}),600);$('rm').onclick=startFight;$('mn').onclick=()=>go('menu');
-  phoneSend(w,{t:'msg',text:'ПОБЕДА!'});phoneSend(1-w,{t:'msg',text:'Поражение'})},2200)}
+ hud();if(F.s.some(x=>x.hp<=0)||F.t<=0)endRound()}
+function endRound(){mode='over';const f=F.s,ko=f.findIndex(x=>x.hp<=0),w=ko>=0?1-ko:F.rp[0]!=F.rp[1]?(F.rp[0]>F.rp[1]?0:1):(f[0].hp>=f[1].hp?0:1),tk=F;F.wins[w]++;
+ phoneSend('all',{t:'fight',on:false});snd(880,1.5,'sine',.5);big(ko>=0?'НОКАУТ!':'ГОНГ!',1800);hud();
+ setTimeout(()=>{if(F!==tk)return;if(F.wins[w]>=Math.ceil(F.tot/2)||F.round>=F.tot)finish();else{F.round++;runRound()}},2600)}
+function finish(){mode='over';const f=F.s,wn=F.wins,w=wn[0]!=wn[1]?(wn[0]>wn[1]?0:1):(f[0].pts>=f[1].pts?0:1);
+ ws&&ws.readyState==1&&ws.send(JSON.stringify({t:'result',winner:w,ko:f.some(x=>x.hp<=0),duration:SET.time*F.round,p1:{...f[0],rounds:wn[0]},p2:{...f[1],rounds:wn[1]}}));
+ const row=(l,g)=>`<tr><td>${l}</td><td>${g(f[0],0)}</td><td>${g(f[1],1)}</td></tr>`;
+ $('result').innerHTML=`<h2>Победил игрок ${w+1}</h2><table><tr><td></td><td>Игрок 1</td><td>Игрок 2</td></tr>${row('Раунды',(x,i)=>wn[i])}${row('Очки',x=>x.pts)}${row('Ударов',x=>x.thrown)}${row('Попаданий',x=>x.landed)}${row('Точность',x=>x.thrown?Math.round(x.landed/x.thrown*100)+'%':'—')}${row('Урон',x=>x.dmg)}${row('Макс. скорость',x=>x.max.toFixed(1)+' м/с')}</table><button class=b id=rm>Реванш</button><button class=b id=mn>В меню</button>`;
+ show('result');mode='result';$('rm').onclick=startFight;$('mn').onclick=()=>go('menu');
+ setTimeout(()=>fetch('/api/top').then(r=>r.json()).then(a=>{if(a.length)$('result').insertAdjacentHTML('beforeend','<div style="font-size:16px;opacity:.7;margin-top:10px">Последние бои: '+a.map(x=>`${new Date(x.created_at).toLocaleDateString()} игрок ${x.winner+1} (${x.p1.pts}:${x.p2.pts})`).join(' · ')+'</div>')}).catch(()=>{}),600);
+ phoneSend(w,{t:'msg',text:'ПОБЕДА!'});phoneSend(1-w,{t:'msg',text:'Поражение'})}
+
 // ---------- цикл
 let shake=0,tPrev=performance.now();
 function rs(){R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}addEventListener('resize',rs);rs();
 (function loop(){requestAnimationFrame(loop);const now=performance.now(),dt=Math.min(.05,(now-tPrev)/1e3);tPrev=now;
- robots.forEach(r=>pose(r,dt));S.updateMatrixWorld(true);
+ robots.forEach(r=>{padUpdate(r,dt);pose(r,dt)});S.updateMatrixWorld(true);
  if(mode=='fight')combat(dt);
  for(let i=0;i<N;i++){if(pl[i]>0){pl[i]-=dt;pv[i].y-=9*dt;pp[i*3]+=pv[i].x*dt;pp[i*3+1]+=pv[i].y*dt;pp[i*3+2]+=pv[i].z*dt;if(pl[i]<=0)pp[i*3+1]=-99}}pg.attributes.position.needsUpdate=true;
- shake*=Math.pow(.01,dt);const t=now/1e3;cam.position.set(camBase.x+Math.sin(t*.3)*.5+(Math.random()-.5)*shake,camBase.y+(Math.random()-.5)*shake,camBase.z);cam.lookAt(0,1.05,0);R.render(S,cam)})();
+ shake*=Math.pow(.01,dt);const t=now/1e3,kk=Math.max(1,1.78/cam.aspect);cam.position.set(camBase.x+Math.sin(t*.3)*.5+(Math.random()-.5)*shake,camBase.y*kk+(Math.random()-.5)*shake,camBase.z*kk);cam.lookAt(0,.8,0);R.render(S,cam)})();
 show('menu');
 </script></html>
