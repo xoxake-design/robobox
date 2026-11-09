@@ -1,0 +1,1 @@
+{"name":"robobox","version":"1.0.0","scripts":{"start":"node server.js","cert":"mkdir cert && openssl req -x509 -newkey rsa:2048 -nodes -keyout cert/key.pem -out cert/cert.pem -days 365 -subj /CN=robobox"},"dependencies":{"ws":"^8.18.0"}}

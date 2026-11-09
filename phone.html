@@ -1,0 +1,56 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>RoboBox · телефон</title>
+<style>
+html,body{margin:0;height:100%;background:#0a0c12;color:#eef2ff;font:600 18px 'Bahnschrift','Arial Narrow',system-ui,sans-serif;overflow:hidden}
+#v,#c{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+#top,#bot{position:absolute;left:0;right:0;padding:14px;text-align:center;background:linear-gradient(#0a0c12cc,#0000)}
+#top{top:0;padding-top:max(14px,env(safe-area-inset-top))}#bot{bottom:0;background:linear-gradient(#0000,#0a0c12e0);padding-bottom:max(18px,env(safe-area-inset-bottom))}
+#msg{font-size:26px;line-height:1.15}#sub{opacity:.7;font-size:15px;margin-top:4px}
+button{font:inherit;background:#ff5a1f;color:#fff;border:0;border-radius:6px;padding:16px 30px;font-size:20px}
+#flash{position:absolute;inset:0;background:#f33;opacity:0;pointer-events:none;transition:opacity .35s}
+#hpw{height:10px;background:#222;border-radius:5px;overflow:hidden;margin-top:8px}#hp{height:100%;width:100%;background:#36e2ff;transition:width .2s}
+</style>
+<video id=v playsinline muted></video><canvas id=c></canvas><div id=flash></div>
+<div id=top><div id=msg>Подключение…</div><div id=sub></div></div>
+<div id=bot><button id=go>Включить камеру</button><div id=hpw hidden><div id=hp></div></div></div>
+<script type="module">
+import {PoseLandmarker,FilesetResolver} from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
+const $=i=>document.getElementById(i),room=new URLSearchParams(location.search).get('room');
+const msg=(t,s='')=>{$('msg').textContent=t;$('sub').textContent=s};
+const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host);
+let slot=-1,ready=false,lm,path=0,last=null,fight=false;
+ws.onopen=()=>ws.send(JSON.stringify({t:'join',code:room}));
+ws.onmessage=e=>{const m=JSON.parse(e.data);
+ if(m.t==='joined'){slot=m.slot;msg('Вы игрок '+(slot+1),'Нажмите «Включить камеру»')}
+ if(m.t==='nores')msg('Комната не найдена','Отсканируйте QR заново');if(m.t==='full')msg('Комната занята','Уже два игрока');
+ if(m.t==='msg')msg(m.text,m.sub||'');
+ if(m.t==='fight'){fight=m.on;$('hpw').hidden=!m.on}
+ if(m.t==='hp')$('hp').style.width=m.v+'%';
+ if(m.t==='hit'){navigator.vibrate&&navigator.vibrate(m.block?30:120);$('flash').style.opacity=m.block?.2:.6;setTimeout(()=>$('flash').style.opacity=0,120)}
+ if(m.t==='reset'){ready=false;path=0}};
+$('go').onclick=async()=>{
+ $('go').hidden=true;msg('Загрузка модели…');
+ try{navigator.wakeLock&&navigator.wakeLock.request('screen')}catch{}
+ const v=$('v');
+ v.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:720},height:{ideal:1280}},audio:false});
+ await v.play();
+ const fs=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+ const pl=await PoseLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',delegate:'GPU'},runningMode:'VIDEO',numPoses:1});
+ const c=$('c'),x=c.getContext('2d');let lt=-1;
+ const loop=()=>{requestAnimationFrame(loop);if(v.currentTime===lt||!v.videoWidth)return;lt=v.currentTime;
+  c.width=v.videoWidth;c.height=v.videoHeight;
+  const r=pl.detectForVideo(v,performance.now());x.clearRect(0,0,c.width,c.height);
+  const n=r.landmarks[0],w=r.worldLandmarks[0];
+  if(!n){if(!fight)msg('Вас не видно','Встаньте перед телефоном');return}
+  x.strokeStyle='#36e2ff';x.lineWidth=5;
+  for(const k of PoseLandmarker.POSE_CONNECTIONS){x.beginPath();x.moveTo(n[k.start].x*c.width,n[k.start].y*c.height);x.lineTo(n[k.end].x*c.width,n[k.end].y*c.height);x.stroke()}
+  const ok=[0,15,16,27,28].every(i=>n[i].visibility>.5&&n[i].x>.02&&n[i].x<.98&&n[i].y>.02&&n[i].y<.98);
+  if(!ready){
+   if(!ok){path=0;msg('Нужен полный рост','Отойдите назад на 2–3 метра, чтобы были видны голова и ноги');}
+   else{msg('Помашите руками','Проверка движения…');
+    const p=[n[15],n[16]];if(last)path+=Math.hypot(p[0].x-last[0].x,p[0].y-last[0].y)+Math.hypot(p[1].x-last[1].x,p[1].y-last[1].y);last=p;
+    $('sub').textContent='Проверка движения: '+Math.min(100,Math.round(path/1.5*100))+'%';
+    if(path>1.5){ready=true;ws.send(JSON.stringify({t:'ready',v:true}));msg('Готово ✔','Ждите старта на большом экране')}}}
+  const p=[];for(let i=0;i<33;i++)p.push(+w[i].x.toFixed(3),+w[i].y.toFixed(3),+w[i].z.toFixed(3),+(n[i].visibility).toFixed(2));
+  ws.send(JSON.stringify({t:'pose',p,h:[+((n[23].x+n[24].x)/2).toFixed(3),+Math.abs(n[11].x-n[12].x).toFixed(3)]}))};
+ loop()};
+</script></html>
