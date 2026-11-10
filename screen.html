@@ -6,11 +6,11 @@ canvas{position:fixed;inset:0}
 .p{position:fixed;display:none;z-index:2}.p.on{display:block}
 #menu{left:7vw;top:50%;transform:translateY(-50%)}
 h1{font:900 clamp(60px,9vw,150px)/.85 Impact,'Arial Narrow',sans-serif;margin:0 0 30px;letter-spacing:2px;text-shadow:0 0 40px #ff5a1f88}h1 b{color:var(--or)}
-.b{display:block;min-width:340px;margin:10px 0;padding:16px 26px;background:#0a0c12cc;border:2px solid #3a4258;color:#eef2ff;font:inherit;font-size:28px;text-align:left;cursor:pointer}
+.b{display:block;min-width:min(340px,80vw);margin:10px 0;padding:16px 26px;background:#0a0c12cc;border:2px solid #3a4258;color:#eef2ff;font:inherit;font-size:28px;text-align:left;cursor:pointer}
 .b:hover,.b.f{border-color:var(--or);background:var(--or);color:#fff}.b[disabled]{opacity:.35;pointer-events:none}
-.card{background:#0a0c12e6;border:2px solid #3a4258;padding:24px 30px}
-#set,#chars,#lobby,#result{left:50%;top:50%;transform:translate(-50%,-50%);min-width:520px}
-#lobby{left:7vw;transform:translateY(-50%)}#qr{background:#fff;padding:12px;width:230px;height:230px;margin:14px 0}#qr svg{width:100%;height:100%}
+.card{max-height:92vh;overflow:auto;box-sizing:border-box;background:#0a0c12e6;border:2px solid #3a4258;padding:24px 30px}
+#set,#chars,#lobby,#result,#how{left:50%;top:50%;transform:translate(-50%,-50%);min-width:min(520px,88vw)}
+#lobby,#how{left:7vw;transform:translateY(-50%)}#qr{background:#fff;padding:12px;width:230px;height:230px;margin:14px 0}#qr svg{width:100%;height:100%}
 .row{display:flex;justify-content:space-between;align-items:center;gap:20px;margin:14px 0}.row i{font-style:normal;color:var(--cy);min-width:150px;text-align:center}
 .row button{background:none;border:2px solid #3a4258;color:#fff;font:inherit;padding:2px 14px;cursor:pointer}
 .pl{margin:8px 0;opacity:.5}.pl.on{opacity:1;color:var(--cy)}.pl.rd{color:#7dff9a}
@@ -27,8 +27,9 @@ h2{font:900 44px Impact,sans-serif;margin:0 0 8px}
 <div class=p id=menu><h1>ROBO<br><b>BOX</b></h1><button class=b id=bs>Начать бой</button><button class=b id=bc>Персонажи</button><button class=b id=bt>Настройки</button></div>
 <div class="p card" id=set><h2>Настройки</h2><div id=setrows></div><button class=b data-back>Назад</button></div>
 <div class="p card" id=chars><h2>Персонажи</h2><div id=charrows></div><button class=b data-back>Назад</button></div>
-<div class="p card" id=lobby><h2>Подключите телефоны</h2>Отсканируйте QR камерой телефона<div id=qr></div><div id=url style="font-size:15px;opacity:.7;margin-bottom:10px"></div>
- <div class=pl id=pl0></div><div class=pl id=pl1></div><button class=b id=fight disabled>Старт боя</button><button class=b data-back>Назад</button></div>
+<div class="p card" id=how><h2>Как играем?</h2><button class=b id=hc>📱 Телефоны с камерой</button><button class=b id=hp>🎮 Джойстики</button><button class=b data-back>Назад</button></div>
+<div class="p card" id=lobby><h2 id=lh>Подключите телефоны</h2><div id=ld>Отсканируйте QR камерой телефона</div><div id=qr></div><div id=url style="font-size:15px;opacity:.7;margin-bottom:10px"></div>
+ <div id=lhint style="font-size:15px;opacity:.7">Джойстик: нажмите любую кнопку. Стик — ход, A/B — прямые, X/Y — боковой/апперкот, LB/RB — блок, Start — старт</div><div class=pl id=pl0></div><div class=pl id=pl1></div><button class=b id=fight disabled>Старт боя</button><button class=b data-back>Назад</button></div>
 <div class=p id=hud><div class=g><div class=hb><div class=bar><div id=h0></div></div><small id=s0></small></div><div id=tm>0</div><div class="hb r"><div class=bar><div id=h1></div></div><small id=s1></small></div></div><div id=cmb style="text-align:center;color:var(--or);font-size:30px;height:36px"></div></div>
 <div class="p card" id=result></div><div class=p id=big></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -109,11 +110,28 @@ function build(r){
 
 const Z=V(0,-1,0),q=new THREE.Quaternion(),tmp=V();
 const aim=(g,d)=>g.quaternion.setFromUnitVectors(Z,d.normalize());
+const wt=ms=>new Promise(r=>setTimeout(r,ms));
+const PUN={0:{h:'L',x:.55,y:0,z:0,e:.2},1:{h:'R',x:.55,y:0,z:0,e:.2},2:{h:'L',x:.35,y:.05,z:.32,e:.15},3:{h:'R',x:.3,y:.3,z:.05,e:.1}};
+let padOK=true;
+function getPads(){if(!padOK||!navigator.getGamepads)return[];try{return[...navigator.getGamepads()].filter(Boolean)}catch(e){padOK=false;console.warn('gamepad:',e.message);const d=$('ld');if(d&&ctrl=='pad')d.textContent='Джойстики недоступны в этом окне (запрещено политикой браузера). Откройте игру в отдельной вкладке браузера или выберите «Телефоны с камерой».';return[]}}
+function padPose(r,dt){const T=r.T;
+ if(r.block){T[15].set(.22,.78,-.1);T[16].set(.22,.78,.1);T[13].set(.12,.45,-.3);T[14].set(.12,.45,.3)}
+ if(r.pk!=null){r.ptm+=dt;const d=PUN[r.pk],u=Math.sin(Math.min(1,r.ptm/.3)*Math.PI),L=d.h=='L',w=L?15:16,e=L?13:14;
+  T[w].x+=d.x*u;T[w].y+=d.y*u;T[w].z+=d.z*u*(L?1:-1);T[e].x+=d.e*u;T[e].y+=d.y*u*.5;if(r.ptm>=.3)r.pk=null}}
+function padUpdate(r,dt){
+ if(ctrl!='pad')return;
+ const pads=getPads();
+ if(r.gpi==null){if(r.on)return;const g=pads.find(g=>g.buttons.some(b=>b.pressed)&&!robots.some(o=>o.gpi==g.index));if(!g)return;r.gpi=g.index;r.on=r.ready=true;r.pb=g.buttons.map(b=>b.pressed);lobbyUI();snd(700,.1);return}
+ const g=pads.find(g=>g.index==r.gpi);if(!g){r.gpi=null;r.on=r.ready=false;lobbyUI();return}
+ const b=g.buttons.map(x=>x.pressed),pv=r.pb||[],ax=i=>Math.abs(g.axes[i])>.15?g.axes[i]:0;r.pb=b;
+ r.fwd=THREE.MathUtils.clamp(r.fwd-ax(1)*dt*1.8,-1.6,.7);r.lat=THREE.MathUtils.clamp(r.lat+ax(0)*dt*1.6,-1.2,1.2);r.block=b[4]||b[5]||b[6]||b[7];
+ for(const k in PUN)if(b[k]&&!pv[k]&&r.pk==null){r.pk=+k;r.ptm=0}
+ if(b[9]&&!pv[9]&&(mode=='lobby'&&robots[0].ready&&robots[1].ready||mode=='result'))startFight()}
 function pose(r,dt){
  const idle=performance.now()-r.live>1500,t=performance.now()/1000;
- if(idle){for(const k in GUARD)r.T[k].copy(GUARD[k]);const ph=(t*.55+r.i*1.2)%2.2,j=ph<.3?Math.sin(ph/.3*Math.PI):0;
-  r.T[15].x+=j*.5*(r.i?0:1);r.T[16].x+=j*.5*(r.i?1:0);for(const k in GUARD)r.T[k].y+=Math.sin(t*2+r.i)*.012;r.T[11].z+=0;r.lat=r.fwd=0}
- const a=1-Math.pow(.0005,dt),pf=r.fS;r.fS+=(r.fwd-r.fS)*Math.min(1,dt*7);r.lS+=(r.lat-r.lS)*Math.min(1,dt*7);
+ if(idle){for(const k in GUARD)r.T[k].copy(GUARD[k]);const ph=(t*.55+r.i*1.2)%2.2,j=ph<.3&&r.gpi==null?Math.sin(ph/.3*Math.PI):0;
+  r.T[15].x+=j*.5*(r.i?0:1);r.T[16].x+=j*.5*(r.i?1:0);for(const k in GUARD)r.T[k].y+=Math.sin(t*2+r.i)*.012;if(r.gpi==null)r.lat=r.fwd=0;else padPose(r,dt)}
+ const a=r.gpi!=null&&idle?.5:1-Math.pow(.0005,dt),pf=r.fS;r.fS+=(r.fwd-r.fS)*Math.min(1,dt*7);r.lS+=(r.lat-r.lS)*Math.min(1,dt*7);
  const walk=Math.min(1,Math.abs(r.fS-pf)/dt/.6);r.ph+=dt*9*walk;const sn=Math.sin(r.ph),W={25:[sn*.18,Math.max(0,sn)*.05],27:[sn*.35,Math.max(0,sn)*.14],26:[-sn*.18,Math.max(0,-sn)*.05],28:[-sn*.35,Math.max(0,-sn)*.14]};
  for(const k in GUARD){tmp.copy(r.T[k]);const w=W[k];if(w){tmp.x+=w[0]*walk;tmp.y+=w[1]*walk}r.P[k].lerp(tmp,a)}const P=r.P;
  // ноги и высота
@@ -123,7 +141,7 @@ function pose(r,dt){
  const up=P[11].clone().add(P[12]).multiplyScalar(.5).sub(P[23].clone().add(P[24]).multiplyScalar(.5)).normalize(),rt=P[12].clone().sub(P[11]).normalize(),fw=up.clone().cross(rt).normalize();
  rt.copy(fw).cross(up).normalize();r.T3.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(fw,up,rt));
  r.head.rotation.set(0,0,0);
- r.rig.position.set(Math.min(Math.max(r.fS+r.knock,-1.6),.75),0,Math.max(-1.2,Math.min(1.2,r.lS)));
+ r.rig.position.set(Math.min(Math.max(r.fS+r.knock,-1.6),.7),0,Math.max(-1.2,Math.min(1.2,r.lS)));
  for(const [s,sg,hz] of [['L',-1,23],['R',1,24]]){
   const sh=V(0,.55,.22*sg).applyQuaternion(r.T3.quaternion).add(hip),ei=s=='L'?13:14,wi=s=='L'?15:16,si=s=='L'?11:12,L=r.l;
   const d1=P[ei].clone().sub(P[si]).normalize(),d2=P[wi].clone().sub(P[ei]).normalize();
@@ -138,22 +156,29 @@ const ftext=(p,t,c)=>{const v=p.clone().project(cam),d=document.createElement('d
 // ---------- сеть
 let ws,room,mode='menu',F=null;
 const phoneSend=(to,o)=>ws&&ws.readyState==1&&ws.send(JSON.stringify({...o,to}));
-function connect(){if(ws&&ws.readyState<2)return;ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);
+const HOME=/^https?:$/.test(location.protocol)&&location.host?location.origin:'https://robobox.onrender.com';
+function lstat(t){const d=$('ld');if(d&&ctrl=='cam')d.textContent=t}
+function connect(){if(ws&&ws.readyState<2)return;lstat('Подключение к серверу…');
+ try{ws=new WebSocket(HOME.replace(/^http/,'ws'))}catch(e){lstat('Нет связи с сервером. Откройте игру по адресу '+HOME);return}
+ ws.onerror=()=>lstat('Нет связи с сервером… пробуем ещё раз');
  ws.onopen=()=>ws.send('{"t":"create"}');
  ws.onmessage=e=>{const m=JSON.parse(e.data);
-  if(m.t=='room'){room=m.code;const u=location.origin+'/phone.html?room='+room,q=qrcode(0,'M');q.addData(u);q.make();$('qr').innerHTML=q.createSvgTag({scalable:true,margin:0});$('url').textContent=u}
+  if(m.t=='room'){room=m.code;lstat('Отсканируйте QR камерой телефона');const u=HOME+'/phone.html?room='+room,q=qrcode(0,'M');q.addData(u);q.make();$('qr').innerHTML=q.createSvgTag({scalable:true,margin:0});$('url').textContent=u}
   if(m.t=='player'){const r=robots[m.slot];r.on=m.on;if(!m.on){r.ready=false;r.live=0}lobbyUI();if(m.on)phoneSend(m.slot,{t:'msg',text:'Вы игрок '+(m.slot+1)})}
   if(m.t=='ready'){const r=robots[m.slot];r.ready=true;r.sw0=r.swf||r.sw;lobbyUI()}
   if(m.t=='pose'){const r=robots[m.slot];r.live=r.pt=performance.now();const p=m.p;r.sw=m.h[1];r.swf=r.swf?r.swf+(r.sw-r.swf)*.3:r.sw;
    for(let i=0;i<33;i++)if(p[i*4+3]>.3)r.T[i].set(-p[i*4+2],-p[i*4+1],-p[i*4]);
-   if(r.swf>.005){const d=Math.min(6.5,Math.max(1,CK/r.swf));r.fwd=-1.6+(6.5-d)/5.5*2.35}r.lat=(.5-m.h[0])*3}};
+   if(r.swf>.005){const d=Math.min(6.5,Math.max(1,CK/r.swf));r.fwd=-1.6+(6.5-d)/5.5*2.3}r.lat=(.5-m.h[0])*3}};
  ws.onclose=()=>{if(mode=='lobby')setTimeout(connect,1000)}}
-function lobbyUI(){robots.forEach((r,i)=>{const e=$('pl'+i);e.className='pl'+(r.on?' on':'')+(r.ready?' rd':'');e.textContent=`Игрок ${i+1}: `+(r.ready?'готов ✔':r.on?'подключён, ждём проверку…':'ждём…')});$('fight').disabled=!(robots[0].ready&&robots[1].ready)}
+function lobbyUI(){robots.forEach((r,i)=>{const e=$('pl'+i);e.className='pl'+(r.on?' on':'')+(r.ready?' rd':'');e.textContent=`Игрок ${i+1}: `+(r.ready?'готов ✔':r.on?'подключён, ждём проверку…':(ctrl=='pad'?'нажмите кнопку на джойстике…':'ждём телефон…'))});$('fight').disabled=!(robots[0].ready&&robots[1].ready)}
 // ---------- UI
-const panels=['menu','set','chars','lobby','hud','result'];const show=n=>panels.forEach(p=>$(p).classList.toggle('on',p==n||(n=='fight'&&p=='hud')));
-function go(m){mode=m;show(m);if(m=='lobby'){connect();lobbyUI()}if(m=='menu'){F=null;phoneSend('all',{t:'fight',on:false});$('big').classList.remove('on')}}
+let ctrl='cam',lastCtrl=null;const panels=['menu','how','set','chars','lobby','hud','result'];const show=n=>panels.forEach(p=>$(p).classList.toggle('on',p==n||(n=='fight'&&p=='hud')));
+function go(m){mode=m;show(m);if(m=='lobby'){const cam=ctrl=='cam';$('lh').textContent=cam?'Подключите телефоны':'Подключите джойстики';$('ld').textContent=cam?'Отсканируйте QR камерой телефона':'Нажмите любую кнопку на джойстике игрока 1, затем игрока 2';
+  $('qr').style.display=$('url').style.display=cam?'':'none';$('lhint').style.display=cam?'none':'';
+  if(ctrl!=lastCtrl){robots.forEach(r=>{r.on=r.ready=false;r.gpi=null;r.live=0});lastCtrl=ctrl}
+  if(cam)connect();else if(ws){ws.onclose=null;ws.close()}lobbyUI()}if(m=='menu'){F=null;phoneSend('all',{t:'fight',on:false});$('big').classList.remove('on')}}
 document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>go('menu'));
-$('bs').onclick=()=>go('lobby');$('bt').onclick=()=>go('set');$('bc').onclick=()=>go('chars');
+$('bs').onclick=()=>go('how');$('hc').onclick=()=>{ctrl='cam';go('lobby')};$('hp').onclick=()=>{ctrl='pad';go('lobby')};$('bt').onclick=()=>go('set');$('bc').onclick=()=>go('chars');
 function rows(id,list){const el=$(id);el.innerHTML='';for(const o of list){const d=document.createElement('div');d.className='row';d.innerHTML=`<span>${o.l}</span><span><button>◀</button> <i></i> <button>▶</button></span>`;
  const i=d.querySelector('i'),[b1,b2]=d.querySelectorAll('button'),u=()=>i.textContent=o.show();b1.onclick=()=>{o.step(-1);u();save()};b2.onclick=()=>{o.step(1);u();save()};u();el.append(d)}}
 const cyc=(k,vals,l,fmt=v=>v)=>({l,show:()=>fmt(SET[k]),step:d=>{SET[k]=vals[(vals.indexOf(SET[k])+d+vals.length)%vals.length];snd(500,.08)}});
@@ -201,10 +226,16 @@ function finish(){mode='over';const f=F.s,wn=F.wins,w=wn[0]!=wn[1]?(wn[0]>wn[1]?
 // ---------- цикл
 let shake=0,tPrev=performance.now();
 function rs(){R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}addEventListener('resize',rs);rs();
-(function loop(){requestAnimationFrame(loop);const now=performance.now(),dt=Math.min(.05,(now-tPrev)/1e3);tPrev=now;
+show('menu');
+let vz=1,vx=0;
+function viewFit(dt){const W=innerWidth,H=innerHeight;let tz=1,tx=0;
+ if(mode=='menu'||mode=='how'||mode=='lobby'){const rr=$(mode).getBoundingClientRect(),AW=Math.max(200,W-rr.right-30);tz=Math.min(2.4,Math.max(1,.8*W/AW));tx=rr.right/2}
+ const a=Math.min(1,dt*4);vz+=(tz-vz)*a;vx+=(tx-vx)*a;
+ if(Math.abs(vx)<.5)cam.clearViewOffset();else cam.setViewOffset(W,H,-vx,0,W,H);return vz}
+(function loop(){requestAnimationFrame(loop);try{const now=performance.now(),dt=Math.min(.05,(now-tPrev)/1e3);tPrev=now;
  robots.forEach(r=>{padUpdate(r,dt);pose(r,dt)});S.updateMatrixWorld(true);
  if(mode=='fight')combat(dt);
  for(let i=0;i<N;i++){if(pl[i]>0){pl[i]-=dt;pv[i].y-=9*dt;pp[i*3]+=pv[i].x*dt;pp[i*3+1]+=pv[i].y*dt;pp[i*3+2]+=pv[i].z*dt;if(pl[i]<=0)pp[i*3+1]=-99}}pg.attributes.position.needsUpdate=true;
- shake*=Math.pow(.01,dt);const t=now/1e3,kk=Math.max(1,1.78/cam.aspect);cam.position.set(camBase.x+Math.sin(t*.3)*.5+(Math.random()-.5)*shake,camBase.y*kk+(Math.random()-.5)*shake,camBase.z*kk);cam.lookAt(0,.8,0);R.render(S,cam)})();
+ shake*=Math.pow(.01,dt);const t=now/1e3,kk=Math.max(1,1.78/cam.aspect)*viewFit(dt);cam.position.set(camBase.x+Math.sin(t*.3)*.5+(Math.random()-.5)*shake,camBase.y*kk+(Math.random()-.5)*shake,camBase.z*kk);cam.lookAt(0,.8,0);R.render(S,cam)}catch(e){if(!window.__le){window.__le=1;console.error('frame error:',e)}}})();
 show('menu');
 </script></html>

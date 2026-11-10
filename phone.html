@@ -19,6 +19,8 @@ const msg=(t,s='')=>{$('msg').textContent=t;$('sub').textContent=s};
 const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host);
 let slot=-1,ready=false,lm,path=0,last=null,fight=false;
 ws.onopen=()=>ws.send(JSON.stringify({t:'join',code:room}));
+ws.onclose=()=>msg('Связь с игрой потеряна','Отсканируйте QR заново');ws.onerror=()=>msg('Нет связи с сервером','Проверьте интернет');
+if(!room)msg('Нет кода комнаты','Отсканируйте QR на большом экране');
 ws.onmessage=e=>{const m=JSON.parse(e.data);
  if(m.t==='joined'){slot=m.slot;msg('Вы игрок '+(slot+1),'Нажмите «Включить камеру»')}
  if(m.t==='nores')msg('Комната не найдена','Отсканируйте QR заново');if(m.t==='full')msg('Комната занята','Уже два игрока');
