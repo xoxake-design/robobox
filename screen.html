@@ -10,7 +10,7 @@ h1{font:900 clamp(60px,9vw,150px)/.85 Impact,'Arial Narrow',sans-serif;margin:0 
 .b:hover,.b.f{border-color:var(--or);background:var(--or);color:#fff}.b[disabled]{opacity:.35;pointer-events:none}
 .card{max-height:92vh;overflow:auto;box-sizing:border-box;background:#0a0c12e6;border:2px solid #3a4258;padding:24px 30px}
 #set,#chars,#lobby,#result,#how{left:50%;top:50%;transform:translate(-50%,-50%);min-width:min(520px,88vw)}
-#lobby,#how{left:7vw;transform:translateY(-50%)}#qr{background:#fff;padding:12px;width:230px;height:230px;margin:14px 0}#qr svg{width:100%;height:100%}
+#lobby,#how{left:7vw;transform:translateY(-50%)}#qr,#qr2{background:#fff;padding:12px;width:230px;height:230px;margin:14px 0}#qr svg,#qr2 svg{width:100%;height:100%}
 .row{display:flex;justify-content:space-between;align-items:center;gap:20px;margin:14px 0}.row i{font-style:normal;color:var(--cy);min-width:150px;text-align:center}
 .row button{background:none;border:2px solid #3a4258;color:#fff;font:inherit;padding:2px 14px;cursor:pointer}
 .pl{margin:8px 0;opacity:.5}.pl.on{opacity:1;color:var(--cy)}.pl.rd{color:#7dff9a}
@@ -22,14 +22,20 @@ h1{font:900 clamp(60px,9vw,150px)/.85 Impact,'Arial Narrow',sans-serif;margin:0 
 .ft{position:fixed;font:900 40px Impact,sans-serif;pointer-events:none;animation:up .9s forwards;z-index:3;text-shadow:0 2px 8px #000}@keyframes up{to{transform:translateY(-90px);opacity:0}}
 table{border-collapse:collapse;width:100%;margin:12px 0}td{padding:6px 10px;border-bottom:1px solid #2a3144}td:not(:first-child){text-align:center}
 h2{font:900 44px Impact,sans-serif;margin:0 0 8px}
+.vr .p,.vr #big{display:none!important}.eye{position:fixed;top:0;bottom:0;width:50%;pointer-events:none;z-index:5;overflow:hidden;font-family:Impact,sans-serif}
+.vh{position:absolute;left:14%;right:14%;top:7%;display:flex;gap:2%;align-items:flex-start;color:#fff}.vb{flex:1;height:2.2vh;background:#1a1f2c;border:1px solid #3a4258}.vb i{display:block;height:100%;background:#36e2ff}.vb.r i{background:#ff5a1f;margin-left:auto}
+.vt{font-size:5vh;line-height:1;text-align:center;min-width:12%}.vt small{display:block;font:700 2vh sans-serif;opacity:.8}.vbig{position:absolute;left:0;right:0;top:36%;text-align:center;font-size:16vh;color:#fff;text-shadow:0 0 30px #ff5a1f}.vfl{position:absolute;inset:0;background:radial-gradient(#0000 40%,#f22)}
+@keyframes kos{0%,100%{transform:translate(0,0)}25%{transform:translate(-14px,8px) scale(1.06)}75%{transform:translate(14px,-8px) scale(1.06)}}#big.ko{animation:kos .25s 7;color:#ff3b30}
 </style>
-<canvas id=cv></canvas>
+<canvas id=cv></canvas><div id=flash style="position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:4;transition:opacity .5s"></div>
+<div id=vrstart style="position:fixed;inset:0;z-index:9;background:#0a0c12;display:none;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px"><h2 style="font:900 36px Impact,sans-serif">VR-очки</h2><div id=vrmsg style="margin:10px 0 20px">Подключение…</div><button class=b id=vrgo style="text-align:center">Надеть очки</button><div style="font-size:15px;opacity:.7;margin-top:14px">Вставьте телефон в очки. Двойное касание экрана — центрировать взгляд.</div></div>
+<div id=vrh style="display:none"><div class=eye style="left:0"></div><div class=eye style="left:50%"></div></div>
 <div class=p id=menu><h1>ROBO<br><b>BOX</b></h1><button class=b id=bs>Начать бой</button><button class=b id=bc>Персонажи</button><button class=b id=bt>Настройки</button></div>
 <div class="p card" id=set><h2>Настройки</h2><div id=setrows></div><button class=b data-back>Назад</button></div>
 <div class="p card" id=chars><h2>Персонажи</h2><div id=charrows></div><button class=b data-back>Назад</button></div>
 <div class="p card" id=how><h2>Как играем?</h2><button class=b id=hc>📱 Телефоны с камерой</button><button class=b id=hp>🎮 Джойстики</button><button class=b data-back>Назад</button></div>
-<div class="p card" id=lobby><h2 id=lh>Подключите телефоны</h2><div id=ld>Отсканируйте QR камерой телефона</div><div id=qr></div><div id=ips></div><div id=bt style="display:none;font-size:14px;opacity:.75;margin:8px 0">Bluetooth: на телефоне включите «Bluetooth-модем», на компьютере подключитесь к телефону (Параметры → Bluetooth → Сеть PAN), затем нажмите кнопку «Bluetooth …». Для двух телефонов нужна общая Wi-Fi сеть.</div><div id=url style="font-size:15px;opacity:.7;margin-bottom:10px"></div>
- <div id=lhint style="font-size:15px;opacity:.7">Джойстик: нажмите любую кнопку. Стик — ход, A/B — прямые, X/Y — боковой/апперкот, LB/RB — блок, Start — старт</div><div class=pl id=pl0></div><div class=pl id=pl1></div><button class=b id=fight disabled>Старт боя</button><button class=b data-back>Назад</button></div>
+<div class="p card" id=lobby><h2 id=lh>Подключите телефоны</h2><div id=ld>Отсканируйте QR камерой телефона</div><div style="display:flex;gap:18px;flex-wrap:wrap"><div><div id=qr></div><small>📱 Телефоны-камеры</small></div><div><div id=qr2></div><small>🥽 VR-очки (по желанию)</small></div></div><div id=ips></div><div id=bt style="display:none;font-size:14px;opacity:.75;margin:8px 0">Bluetooth: на телефоне включите «Bluetooth-модем», на компьютере подключитесь к телефону (Параметры → Bluetooth → Сеть PAN), затем нажмите кнопку «Bluetooth …». Для двух телефонов нужна общая Wi-Fi сеть.</div><div id=url style="font-size:15px;opacity:.7;margin-bottom:10px"></div>
+ <div id=lhint style="font-size:15px;opacity:.7">Джойстик: нажмите любую кнопку. Стик — ход, A/B — прямые, X/Y — боковой/апперкот, LB/RB — блок, Start — старт</div><div class=pl id=pl0></div><div class=pl id=pl1></div><div class=pl id=pv0></div><div class=pl id=pv1></div><button class=b id=fight disabled>Старт боя</button><button class=b data-back>Назад</button></div>
 <div class=p id=hud><div class=g><div class=hb><div class=bar><div id=h0></div></div><small id=s0></small></div><div id=tm>0</div><div class="hb r"><div class=bar><div id=h1></div></div><small id=s1></small></div></div><div id=cmb style="text-align:center;color:var(--or);font-size:30px;height:36px"></div></div>
 <div class="p card" id=result></div><div class=p id=big></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -38,6 +44,7 @@ import * as THREE from 'three';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import qrcode from 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/+esm';
 const $=i=>document.getElementById(i),V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z);
+const QS=new URLSearchParams(location.search),VR=QS.has('vr'),GAIN=1.7,JK=[11,12,13,14,15,16,23,24,25,26,27,28];
 const SK=[{n:'Железный',c:0xb9c2d0,a:0xff5a1f},{n:'Кобальт',c:0x4a6fa5,a:0x36e2ff},{n:'Золотой',c:0xd4a017,a:0xffe14a},{n:'Пустота',c:0x2a2a35,a:0xb84bff}];
 const SET=Object.assign({time:60,rounds:3,dmg:1,vol:.6,sk:[0,1]},JSON.parse(localStorage.rb||'{}'));
 const save=()=>localStorage.rb=JSON.stringify(SET);
@@ -45,11 +52,11 @@ const save=()=>localStorage.rb=JSON.stringify(SET);
 let AC;const snd=(f,d,ty='sine',v=.3,f2=f)=>{if(!SET.vol)return;AC=AC||new AudioContext();const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;
  o.type=ty;o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v*SET.vol,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(AC.destination);o.start();o.stop(t+d)};
 // ---------- сцена
-const cv=$('cv'),R=new THREE.WebGLRenderer({canvas:cv,antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,2));R.shadowMap.enabled=true;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.1;
+const cv=$('cv'),R=new THREE.WebGLRenderer({canvas:cv,antialias:true});R.setPixelRatio(VR?1:Math.min(devicePixelRatio,2));R.shadowMap.enabled=!VR;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.1;
 const S=new THREE.Scene();S.background=new THREE.Color(0x05060a);S.fog=new THREE.FogExp2(0x05060a,.045);
 S.environment=new THREE.PMREMGenerator(R).fromScene(new RoomEnvironment(),.04).texture;S.environmentIntensity=.8;S.add(new THREE.HemisphereLight(0x9fb0d0,0x20232e,1.4));
 const cam=new THREE.PerspectiveCamera(50,1,.1,100),camBase=V(0,3.9,8.1),CK=.435;
-const spot=(x,c,i)=>{const l=new THREE.SpotLight(c,i,0,.7,.6,1.5);l.position.set(x,7,1);l.castShadow=true;l.shadow.mapSize.set(2048,2048);l.target.position.set(x*.4,0,0);S.add(l,l.target)};
+const spot=(x,c,i)=>{const l=new THREE.SpotLight(c,i,0,.7,.6,1.5);l.position.set(x,7,1);l.castShadow=!VR;l.shadow.mapSize.set(2048,2048);l.target.position.set(x*.4,0,0);S.add(l,l.target)};
 spot(-1.5,0xffe6cc,420);spot(1.5,0xcce6ff,420);
 for(const [x,z,c] of [[-3.4,-3.4,0xff5a1f],[3.4,-3.4,0x36e2ff],[-3.4,3.4,0xff5a1f],[3.4,3.4,0x36e2ff]]){const l=new THREE.PointLight(c,12,9,1.5);l.position.set(x,2.4,z);S.add(l)}
 const M=(c,m,r,o={})=>new THREE.MeshStandardMaterial({color:c,metalness:m,roughness:r,...o});
@@ -66,7 +73,7 @@ for(const [h,c] of [[.45,0xff5a1f],[.85,0xeeeeee],[1.25,0x36e2ff]])for(const [x,
 const LEN={ua:.3,fa:.3,th:.45,sh:.45},HW=.22,HH=.14,GUARD=(()=>{const g={};
  g[11]=V(0,.5,-.2);g[12]=V(0,.5,.2);g[23]=V(0,0,-.1);g[24]=V(0,0,.1);g[13]=V(.05,.25,-.27);g[14]=V(.05,.25,.27);g[15]=V(.27,.45,-.22);g[16]=V(.2,.5,.2);
  g[25]=V(.12,-.43,-.12);g[27]=V(.15,-.86,-.12);g[26]=V(-.05,-.43,.12);g[28]=V(-.12,-.85,.14);return g})();
-const robots=[0,1].map(i=>({i,root:new THREE.Group(),P:Array.from({length:33},()=>V()),T:Array.from({length:33},()=>V()),live:0,ready:false,on:false,sw:0,swf:0,sw0:0,lat:0,fwd:0,fS:0,lS:0,ph:0,pt:0,pad:0,knock:0,flash:0}));
+const robots=[0,1].map(i=>({i,root:new THREE.Group(),P:Array.from({length:33},()=>V()),T:Array.from({length:33},()=>V()),live:0,ready:false,on:false,sw:0,swf:0,sw0:0,lat:0,fwd:0,bx:i?1.2:-1.2,wx:i?1.2:-1.2,wz:0,tx:i?1.2:-1.2,tz:0,yaw:i?Math.PI:0,fall:0,down:false,hx:.5,hx0:.5,ph:0,pt:0,pad:0,knock:0,flash:0}));
 robots.forEach((r,i)=>{r.root.position.x=i?1.2:-1.2;r.root.rotation.y=i?Math.PI:0;S.add(r.root);build(r)});
 var NZ;function noise(){if(NZ)return NZ;const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');x.fillStyle='#808080';x.fillRect(0,0,256,256);
  for(let i=0;i<700;i++){const g=Math.random()*255|0;x.strokeStyle=`rgba(${g},${g},${g},.35)`;x.lineWidth=Math.random()*1.5;x.beginPath();const a=Math.random()*256,b=Math.random()*256;x.moveTo(a,b);x.lineTo(a+(Math.random()-.5)*60,b+(Math.random()-.5)*60);x.stroke()}
@@ -124,15 +131,16 @@ function padUpdate(r,dt){
  if(r.gpi==null){if(r.on)return;const g=pads.find(g=>g.buttons.some(b=>b.pressed)&&!robots.some(o=>o.gpi==g.index));if(!g)return;r.gpi=g.index;r.on=r.ready=true;r.pb=g.buttons.map(b=>b.pressed);lobbyUI();snd(700,.1);return}
  const g=pads.find(g=>g.index==r.gpi);if(!g){r.gpi=null;r.on=r.ready=false;lobbyUI();return}
  const b=g.buttons.map(x=>x.pressed),pv=r.pb||[],ax=i=>Math.abs(g.axes[i])>.15?g.axes[i]:0;r.pb=b;
- r.fwd=THREE.MathUtils.clamp(r.fwd-ax(1)*dt*1.8,-1.6,.7);r.lat=THREE.MathUtils.clamp(r.lat+ax(0)*dt*1.6,-1.2,1.2);r.block=b[4]||b[5]||b[6]||b[7];
+ {const o=robots[1-r.i],dx=o.wx-r.wx,dz=o.wz-r.wz,l=Math.hypot(dx,dz)||1,fx=dx/l,fz=dz/l,mf=-ax(1),mr=ax(0);r.wx+=(fx*mf-fz*mr)*dt*2.4;r.wz+=(fz*mf+fx*mr)*dt*2.4;r.tx=r.wx;r.tz=r.wz}r.block=b[4]||b[5]||b[6]||b[7];
  for(const k in PUN)if(b[k]&&!pv[k]&&r.pk==null){r.pk=+k;r.ptm=0}
  if(b[9]&&!pv[9]&&(mode=='lobby'&&robots[0].ready&&robots[1].ready||mode=='result'))startFight()}
 function pose(r,dt){
  const idle=performance.now()-r.live>1500,t=performance.now()/1000;
  if(idle){for(const k in GUARD)r.T[k].copy(GUARD[k]);const ph=(t*.55+r.i*1.2)%2.2,j=ph<.3&&r.gpi==null?Math.sin(ph/.3*Math.PI):0;
   r.T[15].x+=j*.5*(r.i?0:1);r.T[16].x+=j*.5*(r.i?1:0);for(const k in GUARD)r.T[k].y+=Math.sin(t*2+r.i)*.012;if(r.gpi==null)r.lat=r.fwd=0;else padPose(r,dt)}
- const a=r.gpi!=null&&idle?.5:1-Math.pow(.0005,dt),pf=r.fS;r.fS+=(r.fwd-r.fS)*Math.min(1,dt*7);r.lS+=(r.lat-r.lS)*Math.min(1,dt*7);
- const walk=Math.min(1,Math.abs(r.fS-pf)/dt/.6);r.ph+=dt*9*walk;const sn=Math.sin(r.ph),W={25:[sn*.18,Math.max(0,sn)*.05],27:[sn*.35,Math.max(0,sn)*.14],26:[-sn*.18,Math.max(0,-sn)*.05],28:[-sn*.35,Math.max(0,-sn)*.14]};
+ const a=r.gpi!=null&&idle?.5:1-Math.pow(.0005,dt),ox=r.wx,oz=r.wz;
+ if(!VR){if(!(r.gpi!=null&&idle)){r.tx=r.bx+(r.i?-1:1)*GAIN*r.fwd;r.tz=(r.i?-1:1)*GAIN*r.lat}const kq=Math.min(1,dt*6);r.wx+=(r.tx-r.wx)*kq;r.wz+=(r.tz-r.wz)*kq}
+ const walk=Math.min(1,Math.hypot(r.wx-ox,r.wz-oz)/Math.max(dt,.001)/.6);r.ph+=dt*9*walk;const sn=Math.sin(r.ph),W={25:[sn*.18,Math.max(0,sn)*.05],27:[sn*.35,Math.max(0,sn)*.14],26:[-sn*.18,Math.max(0,-sn)*.05],28:[-sn*.35,Math.max(0,-sn)*.14]};
  for(const k in GUARD){tmp.copy(r.T[k]);const w=W[k];if(w){tmp.x+=w[0]*walk;tmp.y+=w[1]*walk}r.P[k].lerp(tmp,a)}const P=r.P;
  // ноги и высота
  const leg=(h,k,kn,an)=>{const d1=P[kn].clone().sub(P[k]).normalize(),d2=P[an].clone().sub(P[kn]).normalize();return {d1,d2,foot:d1.clone().multiplyScalar(LEN.th).addScaledVector(d2,LEN.sh)}};
@@ -141,13 +149,13 @@ function pose(r,dt){
  const up=P[11].clone().add(P[12]).multiplyScalar(.5).sub(P[23].clone().add(P[24]).multiplyScalar(.5)).normalize(),rt=P[12].clone().sub(P[11]).normalize(),fw=up.clone().cross(rt).normalize();
  rt.copy(fw).cross(up).normalize();r.T3.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(fw,up,rt));
  r.head.rotation.set(0,0,0);
- r.rig.position.set(Math.min(Math.max(r.fS+r.knock,-1.6),.7),0,Math.max(-1.2,Math.min(1.2,r.lS)));
+ if(!VR)r.fall=r.down?Math.min(1,r.fall+dt*1.6):Math.max(0,r.fall-dt*3);r.rig.position.set(0,.14*r.fall,0);r.rig.rotation.z=1.5*r.fall;
  for(const [s,sg,hz] of [['L',-1,23],['R',1,24]]){
   const sh=V(0,.55,.22*sg).applyQuaternion(r.T3.quaternion).add(hip),ei=s=='L'?13:14,wi=s=='L'?15:16,si=s=='L'?11:12,L=r.l;
   const d1=P[ei].clone().sub(P[si]).normalize(),d2=P[wi].clone().sub(P[ei]).normalize();
   L['ua'+s].position.copy(sh);aim(L['ua'+s],d1);L['fa'+s].position.copy(sh).addScaledVector(d1,LEN.ua);aim(L['fa'+s],d2);
   const g=s=='L'?lL:lR;L['th'+s].position.set(0,hy,HH*sg);aim(L['th'+s],g.d1);L['sh'+s].position.set(0,hy,HH*sg).addScaledVector(g.d1,LEN.th);aim(L['sh'+s],g.d2)}
- r.flash=Math.max(0,r.flash-dt*3);r.body.emissiveIntensity=r.flash;r.knock*=Math.pow(.02,dt)}
+ r.flash=Math.max(0,r.flash-dt*3);r.body.emissiveIntensity=r.flash}
 // ---------- частицы и текст
 const N=400,pg=new THREE.BufferGeometry(),pp=new Float32Array(N*3).fill(-99),pv=Array.from({length:N},()=>V()),pl=new Float32Array(N);
 pg.setAttribute('position',new THREE.BufferAttribute(pp,3));const pts=new THREE.Points(pg,new THREE.PointsMaterial({size:.07,color:0xffb347,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));pts.frustumCulled=false;S.add(pts);let pi=0;
@@ -157,7 +165,7 @@ const ftext=(p,t,c)=>{const v=p.clone().project(cam),d=document.createElement('d
 let ws,room,mode='menu',F=null;
 const phoneSend=(to,o)=>ws&&ws.readyState==1&&ws.send(JSON.stringify({...o,to}));
 let qrBase=null;
-function drawQR(){if(!room)return;const u=(qrBase||HOME)+'/phone.html?room='+room,q=qrcode(0,'M');q.addData(u);q.make();$('qr').innerHTML=q.createSvgTag({scalable:true,margin:0});$('url').textContent=u}
+function drawQR(){if(!room)return;const u=(qrBase||HOME)+'/phone.html?room='+room,q=qrcode(0,'M');q.addData(u);q.make();$('qr').innerHTML=q.createSvgTag({scalable:true,margin:0});$('url').textContent=u;const q2=qrcode(0,'M');q2.addData((qrBase||HOME)+'/screen.html?vr=1&room='+room);q2.make();$('qr2').innerHTML=q2.createSvgTag({scalable:true,margin:0})}
 async function loadIPs(){try{const a=await(await fetch('/api/ips')).json();if(!a.length)return;const box=$('ips');box.innerHTML='';
  for(const n of a){const b=document.createElement('button');b.className='b';b.style.cssText='font-size:15px;padding:6px 12px;min-width:0;display:inline-block;margin:4px 6px 0 0';b.textContent=(n.bt?'Bluetooth ':'Сеть ')+n.address;
   b.onclick=()=>{qrBase=location.protocol+'//'+n.address+(location.port?':'+location.port:'');drawQR()};box.append(b)}
@@ -171,12 +179,13 @@ function connect(){if(ws&&ws.readyState<2)return;lstat('Подключение �
  ws.onmessage=e=>{const m=JSON.parse(e.data);
   if(m.t=='room'){room=m.code;lstat('Отсканируйте QR камерой телефона');drawQR()}
   if(m.t=='player'){const r=robots[m.slot];r.on=m.on;if(!m.on){r.ready=false;r.live=0}lobbyUI();if(m.on)phoneSend(m.slot,{t:'msg',text:'Вы игрок '+(m.slot+1)})}
-  if(m.t=='ready'){const r=robots[m.slot];r.ready=true;r.sw0=r.swf||r.sw;lobbyUI()}
+  if(m.t=='ready'){const r=robots[m.slot];r.ready=true;r.sw0=r.swf||r.sw;r.hx0=r.hx;lobbyUI()}
+  if(m.t=='viewer'){vOn[m.slot]=m.on;lobbyUI()}
   if(m.t=='pose'){const r=robots[m.slot];r.live=r.pt=performance.now();const p=m.p;r.sw=m.h[1];r.swf=r.swf?r.swf+(r.sw-r.swf)*.3:r.sw;
    for(let i=0;i<33;i++)if(p[i*4+3]>.3)r.T[i].set(-p[i*4+2],-p[i*4+1],-p[i*4]);
-   if(!r.sw0)r.sw0=r.swf;if(r.swf>.005){let d=6*(1-r.sw0/r.swf);d=Math.abs(d)<.05?0:d-Math.sign(d)*.05;r.fwd=THREE.MathUtils.clamp(1.3*d,-1.6,.7)}r.lat=(.5-m.h[0])*3}};
+   r.hx=m.h[0];if(!r.sw0)r.sw0=r.swf;if(r.swf>.005){let d=6*(1-r.sw0/r.swf);d=Math.abs(d)<.05?0:d-Math.sign(d)*.05;r.fwd=THREE.MathUtils.clamp(d,-3,3)}{let l=(r.hx0-m.h[0])*4.4;l=Math.abs(l)<.04?0:l-Math.sign(l)*.04;r.lat=THREE.MathUtils.clamp(l,-3,3)}}};
  ws.onclose=()=>{if(mode=='lobby')setTimeout(connect,1000)}}
-function lobbyUI(){robots.forEach((r,i)=>{const e=$('pl'+i);e.className='pl'+(r.on?' on':'')+(r.ready?' rd':'');e.textContent=`Игрок ${i+1}: `+(r.ready?'готов ✔':r.on?'подключён, ждём проверку…':(ctrl=='pad'?'нажмите кнопку на джойстике…':'ждём телефон…'))});$('fight').disabled=!(robots[0].ready&&robots[1].ready)}
+function lobbyUI(){robots.forEach((r,i)=>{const e=$('pl'+i);e.className='pl'+(r.on?' on':'')+(r.ready?' rd':'');e.textContent=`Игрок ${i+1}: `+(r.ready?'готов ✔':r.on?'подключён, ждём проверку…':(ctrl=='pad'?'нажмите кнопку на джойстике…':'ждём телефон…'))});[0,1].forEach(i=>{const e=$('pv'+i);e.className='pl'+(vOn[i]?' on rd':'');e.textContent='VR-очки '+(i+1)+': '+(vOn[i]?'подключены ✔':'не подключены (необязательно)')});$('fight').disabled=!(robots[0].ready&&robots[1].ready)}
 // ---------- UI
 let ctrl='cam',lastCtrl=null;const panels=['menu','how','set','chars','lobby','hud','result'];const show=n=>panels.forEach(p=>$(p).classList.toggle('on',p==n||(n=='fight'&&p=='hud')));
 function go(m){mode=m;show(m);if(m=='lobby'){const cam=ctrl=='cam';$('lh').textContent=cam?'Подключите телефоны':'Подключите джойстики';$('ld').textContent=cam?'Отсканируйте QR камерой телефона':'Нажмите любую кнопку на джойстике игрока 1, затем игрока 2';
@@ -193,11 +202,11 @@ rows('charrows',[0,1].map(i=>({l:'Игрок '+(i+1),show:()=>SK[SET.sk[i]].n,st
 $('fight').onclick=()=>startFight();addEventListener('keydown',e=>{if(e.key=='Escape')go('menu');if((e.key=='Enter'||e.key==' ')&&mode=='lobby'&&!$('fight').disabled)startFight();if(e.key=='Enter'&&mode=='result')startFight()});
 // ---------- бой
 const st=()=>({hp:100,pts:0,thrown:0,landed:0,max:0,dmg:0,combo:0,ct:0});
-const big=(t,d)=>{const b=$('big');b.textContent=t;b.classList.add('on');if(d)setTimeout(()=>b.classList.remove('on'),d)};
+const big=(t,d)=>{const b=$('big');b.textContent=t;b.classList.add('on');bigTxt=''+t;if(d)setTimeout(()=>{b.classList.remove('on');bigTxt=''},d)};
 async function startFight(){F={s:[st(),st()],t:SET.time,round:1,tot:SET.rounds,wins:[0,0],rp:[0,0]};await runRound()}
 async function runRound(){const tk=F,wt=ms=>new Promise(r=>setTimeout(r,ms));
  mode='count';show('hud');F.s.forEach(x=>{x.hp=100;x.combo=0});F.t=SET.time;F.rp=[0,0];hud();$('cmb').textContent='';
- phoneSend('all',{t:'fight',on:false});phoneSend('all',{t:'hp',v:100});robots.forEach(r=>{r.knock=0;r.sw0=r.swf||r.sw0});
+ phoneSend('all',{t:'fight',on:false});phoneSend('all',{t:'hp',v:100});robots.forEach(r=>{r.down=false;r.fall=0;r.wx=r.tx=r.bx;r.wz=r.tz=0;r.fwd=r.lat=0;r.hx0=r.hx;r.sw0=r.swf||r.sw0});
  big('РАУНД '+F.round,1100);phoneSend('all',{t:'msg',text:'Раунд '+F.round});await wt(1300);if(mode!='count'||F!==tk)return;
  for(const n of [3,2,1]){big(n);snd(440,.2,'square',.2);phoneSend('all',{t:'msg',text:String(n)});await wt(1000);if(mode!='count'||F!==tk)return}
  big('БОКС!',900);snd(880,1.2,'sine',.5);phoneSend('all',{t:'msg',text:'БОКС!'});phoneSend('all',{t:'fight',on:true});mode='fight'}
@@ -213,14 +222,14 @@ function combat(dt){
    if(gs.on&&!gs.hit){const hd=p.distanceTo(dh)<.36,ch=p.distanceTo(dc)<.42;
     if(hd||ch){gs.hit=true;const raw=THREE.MathUtils.clamp(v*2.4,5,24)*SET.dmg*(hd?1.5:1),blk=guard&&ch||guard&&hd,d=Math.round(blk?raw*.25:raw);
      f[1-a].hp-=d;f[a].landed++;f[a].dmg+=d;f[a].ct=2;f[a].combo++;const pts=d*10+(f[a].combo>1?f[a].combo*15:0);f[a].pts+=pts;F.rp[a]+=pts;
-     D.flash=blk?.3:1;D.knock-=blk?.05:.04*d;shake=blk?.04:.1;spark(p,blk?10:40);ftext(p,blk?'БЛОК':'-'+d+(f[a].combo>2?' ×'+f[a].combo:''),blk?'#36e2ff':hd?'#ffe14a':'#ff5a1f');
+     D.flash=blk?.3:1;{const dd=Math.hypot(D.wx-A.wx,D.wz-A.wz)||1,pk=blk?.03:.012*d;D.wx+=(D.wx-A.wx)/dd*pk;D.wz+=(D.wz-A.wz)/dd*pk;hitSeq++;hitV=1-a}shake=blk?.04:.1;spark(p,blk?10:40);ftext(p,blk?'БЛОК':'-'+d+(f[a].combo>2?' ×'+f[a].combo:''),blk?'#36e2ff':hd?'#ffe14a':'#ff5a1f');
      snd(blk?600:140,blk?.08:.18,blk?'triangle':'square',.5,blk?300:40);phoneSend(1-a,{t:'hit',block:blk});phoneSend(1-a,{t:'hp',v:Math.max(0,f[1-a].hp)});
      $('cmb').textContent=f[a].combo>1?`КОМБО ×${f[a].combo}  Игрок ${a+1}`:''}}}
   f[a].ct-=dt;if(f[a].ct<=0)f[a].combo=0}
  hud();if(F.s.some(x=>x.hp<=0)||F.t<=0)endRound()}
 function endRound(){mode='over';const f=F.s,ko=f.findIndex(x=>x.hp<=0),w=ko>=0?1-ko:F.rp[0]!=F.rp[1]?(F.rp[0]>F.rp[1]?0:1):(f[0].hp>=f[1].hp?0:1),tk=F;F.wins[w]++;
- phoneSend('all',{t:'fight',on:false});snd(880,1.5,'sine',.5);big(ko>=0?'НОКАУТ!':'ГОНГ!',1800);hud();
- setTimeout(()=>{if(F!==tk)return;if(F.wins[w]>=Math.ceil(F.tot/2)||F.round>=F.tot)finish();else{F.round++;runRound()}},2600)}
+ phoneSend('all',{t:'fight',on:false});snd(880,1.5,'sine',.5);big(ko>=0?'НОКАУТ!':'ГОНГ!',ko>=0?3000:1800);hud();if(ko>=0)koFx(ko);
+ setTimeout(()=>{if(F!==tk)return;if(F.wins[w]>=Math.ceil(F.tot/2)||F.round>=F.tot)finish();else{F.round++;runRound()}},ko>=0?3800:2600)}
 function finish(){mode='over';const f=F.s,wn=F.wins,w=wn[0]!=wn[1]?(wn[0]>wn[1]?0:1):(f[0].pts>=f[1].pts?0:1);
  ws&&ws.readyState==1&&ws.send(JSON.stringify({t:'result',winner:w,ko:f.some(x=>x.hp<=0),duration:SET.time*F.round,p1:{...f[0],rounds:wn[0]},p2:{...f[1],rounds:wn[1]}}));
  const row=(l,g)=>`<tr><td>${l}</td><td>${g(f[0],0)}</td><td>${g(f[1],1)}</td></tr>`;
@@ -229,19 +238,50 @@ function finish(){mode='over';const f=F.s,wn=F.wins,w=wn[0]!=wn[1]?(wn[0]>wn[1]?
  setTimeout(()=>fetch('/api/top').then(r=>r.json()).then(a=>{if(a.length)$('result').insertAdjacentHTML('beforeend','<div style="font-size:16px;opacity:.7;margin-top:10px">Последние бои: '+a.map(x=>`${new Date(x.created_at).toLocaleDateString()} игрок ${x.winner+1} (${x.p1.pts}:${x.p2.pts})`).join(' · ')+'</div>')}).catch(()=>{}),600);
  phoneSend(w,{t:'msg',text:'ПОБЕДА!'});phoneSend(1-w,{t:'msg',text:'Поражение'})}
 
+function koFx(l){koSeq++;robots[l].down=true;tsc=.2;shake=.6;snd(70,.8,'sawtooth',.7,25);spark(wp(robots[l].head),160);const f=$('flash');f.style.opacity=.95;setTimeout(()=>f.style.opacity=0,90);const b=$('big');b.classList.add('ko');setTimeout(()=>b.classList.remove('ko'),1900)}
 // ---------- цикл
-let shake=0,tPrev=performance.now();
+let shake=0,tPrev=performance.now(),hitSeq=0,hitV=0,koSeq=0,vOn=[false,false],bigTxt='',tsc=1,stT=0;
 function rs(){R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}addEventListener('resize',rs);rs();
 show('menu');
+function arena(dt){const [a,b]=robots,L=2.55;for(const r of robots){r.wx=Math.max(-L,Math.min(L,r.wx));r.wz=Math.max(-L,Math.min(L,r.wz))}
+ const dx=b.wx-a.wx,dz=b.wz-a.wz,d=Math.hypot(dx,dz)||.001;if(d<1){const k=(1-d)/2/d;a.wx-=dx*k;a.wz-=dz*k;b.wx+=dx*k;b.wz+=dz*k}
+ for(const r of robots){if(r.gpi!=null){r.tx=r.wx;r.tz=r.wz}const o=robots[1-r.i];let dy=Math.atan2(-(o.wz-r.wz),o.wx-r.wx)-r.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));r.yaw+=dy*Math.min(1,dt*10)}}
+function sendState(dt){stT+=dt;if(stT<.05||!(vOn[0]||vOn[1])||!ws||ws.readyState!=1)return;stT=0;
+ ws.send(JSON.stringify({to:'view',t:'st',m:mode,r:robots.map(r=>({x:+r.wx.toFixed(2),z:+r.wz.toFixed(2),y:+r.yaw.toFixed(2),f:+r.fall.toFixed(2),fl:+r.flash.toFixed(2),p:JK.map(k=>[+r.P[k].x.toFixed(3),+r.P[k].y.toFixed(3),+r.P[k].z.toFixed(3)])})),
+  hp:F?F.s.map(x=>Math.max(0,Math.round(x.hp))):[100,100],tm:F?Math.ceil(F.t):0,rd:F?F.round:1,tot:F?F.tot:SET.rounds,w:F?F.wins:[0,0],big:bigTxt,ko:koSeq,hit:hitSeq,hv:hitV}))}
+// ---------- VR-очки: вид глазами робота (этот же файл, адрес ?vr=1&room=КОД)
+let mySlot=0,vrOn=false,haveDev=false,vrT=0,vs=null,lastKo=null,lastHit=null,vrFlash=0,vrKoT=0;
+const qY=new THREE.Quaternion(),qB=new THREE.Quaternion().setFromAxisAngle(V(0,1,0),-Math.PI/2),qDev=new THREE.Quaternion(),qOff=new THREE.Quaternion(),qH=new THREE.Quaternion(),q1=new THREE.Quaternion(-Math.sqrt(.5),0,0,Math.sqrt(.5)),q0=new THREE.Quaternion(),eu=new THREE.Euler(),stereo=new THREE.StereoCamera();stereo.eyeSep=.07;
+function recenter(){eu.setFromQuaternion(qDev,'YXZ');qOff.setFromAxisAngle(V(0,1,0),-eu.y)}
+function orient(e){if(e.alpha==null)return;const D=Math.PI/180,o=(screen.orientation?screen.orientation.angle:window.orientation||0)*D;eu.set(e.beta*D,e.alpha*D,-e.gamma*D,'YXZ');qDev.setFromEuler(eu);qDev.multiply(q1);qDev.multiply(q0.setFromAxisAngle(V(0,0,1),-o));if(!haveDev){haveDev=true;recenter()}}
+async function vrStart(){try{if(window.DeviceOrientationEvent&&DeviceOrientationEvent.requestPermission)await DeviceOrientationEvent.requestPermission()}catch(e){}
+ addEventListener('deviceorientation',orient);try{await document.documentElement.requestFullscreen();if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape')}catch(e){}
+ try{navigator.wakeLock&&navigator.wakeLock.request('screen')}catch(e){}
+ $('vrstart').style.display='none';$('vrh').style.display='block';vrOn=true;addEventListener('dblclick',recenter);rs()}
+function applyState(m){m.r.forEach((o,i)=>{const r=robots[i];r.wx=o.x;r.wz=o.z;r.yaw=o.y;r.fall=o.f;r.flash=o.fl;r.live=performance.now();JK.forEach((k,j)=>{r.T[k].set(o.p[j][0],o.p[j][1],o.p[j][2]);r.P[k].set(o.p[j][0],o.p[j][1],o.p[j][2])})});
+ vs=m;if(m.ko!=lastKo){if(lastKo!=null){vrKoT=2.5;vrFlash=1}lastKo=m.ko}if(m.hit!=lastHit){if(lastHit!=null&&m.hv==mySlot){vrFlash=.55;navigator.vibrate&&navigator.vibrate(120)}lastHit=m.hit}}
+function vrHud(){if(!vs||!vrOn)return;const me=vs.hp[mySlot],op=vs.hp[1-mySlot],b=vs.big||(vrKoT>0?'НОКАУТ!':'');
+ const h=`<div class=vh><div class=vb><i style="width:${me}%"></i></div><div class=vt>${vs.tm}<small>Р${vs.rd}/${vs.tot} · ${vs.w[mySlot]}:${vs.w[1-mySlot]}</small></div><div class="vb r"><i style="width:${op}%"></i></div></div><div class=vbig>${b}</div><div class=vfl style="opacity:${vrFlash}"></div>`;
+ document.querySelectorAll('.eye').forEach(e=>e.innerHTML=h)}
+function vrRender(dt){const r=robots[mySlot];vrFlash=Math.max(0,vrFlash-dt*2.5);vrKoT=Math.max(0,vrKoT-dt);vrT+=dt;if(vrT>.066){vrT=0;vrHud()}
+ const hp=wp(r.head),yq=qY.setFromAxisAngle(V(0,1,0),r.yaw),fwd=V(1,0,0).applyQuaternion(yq);cam.position.copy(hp).addScaledVector(fwd,.13);
+ cam.quaternion.copy(yq).multiply(qB).multiply(qH.copy(qOff).multiply(qDev));
+ const W=innerWidth,H=innerHeight;cam.aspect=W/2/H;cam.updateProjectionMatrix();cam.updateMatrixWorld(true);stereo.update(cam);
+ R.setScissorTest(true);R.setViewport(0,0,W/2,H);R.setScissor(0,0,W/2,H);R.render(S,stereo.cameraL);R.setViewport(W/2,0,W/2,H);R.setScissor(W/2,0,W/2,H);R.render(S,stereo.cameraR)}
+if(VR){document.body.classList.add('vr');$('vrstart').style.display='flex';$('vrgo').onclick=vrStart;
+ ws=new WebSocket(HOME.replace(/^http/,'ws'));ws.onopen=()=>ws.send(JSON.stringify({t:'view',code:QS.get('room')}));
+ ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.t=='vjoined'){mySlot=m.slot;$('vrmsg').textContent='Вы смотрите глазами робота '+(m.slot+1)}if(m.t=='st')applyState(m);
+  if(m.t=='nores')$('vrmsg').textContent='Комната не найдена. Отсканируйте QR заново';if(m.t=='full')$('vrmsg').textContent='Уже подключены 2 пары VR-очков'};
+ ws.onerror=ws.onclose=()=>{$('vrmsg').textContent='Нет связи с игрой. Обновите страницу'}}
 let vz=1,vx=0;
 function viewFit(dt){const W=innerWidth,H=innerHeight;let tz=1,tx=0;
  if(mode=='menu'||mode=='how'||mode=='lobby'){const rr=$(mode).getBoundingClientRect(),AW=Math.max(200,W-rr.right-30);tz=Math.min(2.4,Math.max(1,.8*W/AW));tx=rr.right/2}
  const a=Math.min(1,dt*4);vz+=(tz-vz)*a;vx+=(tx-vx)*a;
  if(Math.abs(vx)<.5)cam.clearViewOffset();else cam.setViewOffset(W,H,-vx,0,W,H);return vz}
-(function loop(){requestAnimationFrame(loop);try{const now=performance.now(),dt=Math.min(.05,(now-tPrev)/1e3);tPrev=now;
- robots.forEach(r=>{padUpdate(r,dt);pose(r,dt)});S.updateMatrixWorld(true);
+(function loop(){requestAnimationFrame(loop);try{const now=performance.now(),dt0=Math.min(.05,(now-tPrev)/1e3),dt=dt0*tsc;tPrev=now;tsc=Math.min(1,tsc+dt0*.6);
+ if(!VR)robots.forEach(r=>padUpdate(r,dt));robots.forEach(r=>pose(r,dt));if(!VR)arena(dt);robots.forEach(r=>{r.root.position.set(r.wx,0,r.wz);r.root.rotation.y=r.yaw});S.updateMatrixWorld(true);if(!VR)sendState(dt0);
  if(mode=='fight')combat(dt);
  for(let i=0;i<N;i++){if(pl[i]>0){pl[i]-=dt;pv[i].y-=9*dt;pp[i*3]+=pv[i].x*dt;pp[i*3+1]+=pv[i].y*dt;pp[i*3+2]+=pv[i].z*dt;if(pl[i]<=0)pp[i*3+1]=-99}}pg.attributes.position.needsUpdate=true;
- shake*=Math.pow(.01,dt);const t=now/1e3,kk=Math.max(1,1.78/cam.aspect)*viewFit(dt);cam.position.set(camBase.x+Math.sin(t*.3)*.5+(Math.random()-.5)*shake,camBase.y*kk+(Math.random()-.5)*shake,camBase.z*kk);cam.lookAt(0,1,0);R.render(S,cam)}catch(e){if(!window.__le){window.__le=1;console.error('frame error:',e)}}})();
+ shake*=Math.pow(.01,dt);if(VR)vrRender(dt0);else{const t=now/1e3,kk=Math.max(1,1.78/cam.aspect)*viewFit(dt);cam.position.set(camBase.x+Math.sin(t*.3)*.5+(Math.random()-.5)*shake,camBase.y*kk+(Math.random()-.5)*shake,camBase.z*kk);cam.lookAt(0,1,0);R.render(S,cam)}}catch(e){if(!window.__le){window.__le=1;console.error('frame error:',e)}}})();
 show('menu');
 </script></html>

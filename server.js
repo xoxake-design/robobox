@@ -24,14 +24,17 @@ const rooms={};
 const send=(w,o)=>{if(w&&w.readyState===1)w.send(JSON.stringify(o))};
 new WebSocketServer({server}).on('connection',ws=>{
  ws.on('message',d=>{let m;try{m=JSON.parse(d)}catch{return}
-  if(m.t==='create'){const c=Math.random().toString(36).slice(2,6).toUpperCase();rooms[c]={screen:ws,p:[null,null]};ws.room=c;ws.role='screen';send(ws,{t:'room',code:c})}
+  if(m.t==='create'){const c=Math.random().toString(36).slice(2,6).toUpperCase();rooms[c]={screen:ws,p:[null,null],v:[null,null]};ws.room=c;ws.role='screen';send(ws,{t:'room',code:c})}
   else if(m.t==='join'){const r=rooms[m.code];if(!r)return send(ws,{t:'nores'});const s=r.p.indexOf(null);if(s<0)return send(ws,{t:'full'});
    r.p[s]=ws;ws.room=m.code;ws.role='phone';ws.slot=s;send(ws,{t:'joined',slot:s});send(r.screen,{t:'player',slot:s,on:true})}
+  else if(m.t==='view'){const r=rooms[m.code];if(!r)return send(ws,{t:'nores'});const s=r.v.indexOf(null);if(s<0)return send(ws,{t:'full'});
+   r.v[s]=ws;ws.room=m.code;ws.role='viewer';ws.slot=s;send(ws,{t:'vjoined',slot:s});send(r.screen,{t:'viewer',slot:s,on:true})}
   else if(ws.role==='phone'){const r=rooms[ws.room];if(r)send(r.screen,{...m,slot:ws.slot})}
-  else if(ws.role==='screen'){if(m.t==='result'){SB&&sb('matches',{method:'POST',body:JSON.stringify({winner:m.winner,ko:m.ko,duration:m.duration,p1:m.p1,p2:m.p2})}).catch(()=>{});return}const r=rooms[ws.room];if(r)(m.to==='all'?r.p:[r.p[m.to]]).forEach(p=>send(p,m))}});
+  else if(ws.role==='screen'){if(m.t==='result'){SB&&sb('matches',{method:'POST',body:JSON.stringify({winner:m.winner,ko:m.ko,duration:m.duration,p1:m.p1,p2:m.p2})}).catch(()=>{});return}const r=rooms[ws.room];if(r)(m.to==='view'?r.v:m.to==='all'?r.p:[r.p[m.to]]).forEach(p=>send(p,m))}});
  ws.on('close',()=>{const r=rooms[ws.room];if(!r)return;
-  if(ws.role==='phone'){r.p[ws.slot]=null;send(r.screen,{t:'player',slot:ws.slot,on:false})}
-  else{r.p.forEach(p=>p&&p.close());delete rooms[ws.room]}})});
+  if(ws.role==='viewer'){r.v[ws.slot]=null;send(r.screen,{t:'viewer',slot:ws.slot,on:false})}
+  else if(ws.role==='phone'){r.p[ws.slot]=null;send(r.screen,{t:'player',slot:ws.slot,on:false})}
+  else{[...r.p,...r.v].forEach(p=>p&&p.close());delete rooms[ws.room]}})});
 const port=process.env.PORT||3000,proto=secure?'https':'http';
 server.listen(port,()=>{console.log('Открой на большом экране:');
  for(const a of Object.values(os.networkInterfaces()).flat())if(a.family==='IPv4'&&!a.internal)console.log(`  ${proto}://${a.address}:${port}/`);
